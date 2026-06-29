@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 1. Cơ sở dữ liệu PostgreSQL (Tích hợp sẵn PostGIS cho bản đồ)
+  postgres-postgis:
+    image: postgis/postgis:15-3.3-alpine # Dùng bản Alpine cho nhẹ máy
+    container_name: sos_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Đọc từ file .env
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sos_network
+
+  # 2. Redis (Dùng để cache token, session hoặc đếm rate limit)
+  redis:
+    image: redis:7-alpine
+    container_name: sos_redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sos_network
+
+# Định nghĩa Volumes để dữ liệu không bị mất khi tắt Docker
+volumes:
+  postgres_data:
+  redis_data:
+
+# Tạo mạng ảo riêng để sau này các service Spring Boot gọi nhau dễ dàng
+networks:
+  sos_network:
+    driver: bridge

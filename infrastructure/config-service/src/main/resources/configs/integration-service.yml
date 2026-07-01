@@ -1,0 +1,13 @@
+server:
+  port: 8085
+
+spring:
+  mongodb:
+    uri: ${MONGO_INTEGRATION_URI}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true

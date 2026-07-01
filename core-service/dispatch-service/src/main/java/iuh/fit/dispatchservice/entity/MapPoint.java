@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.geolatte.geom.Geometry;
 import org.hibernate.annotations.CreationTimestamp;
+import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,7 +27,7 @@ public class MapPoint {
     private PointType pointType;
 
     @Column(name = "location", columnDefinition = "geometry(Point, 4326)")
-    private Geometry location;
+    private Point location;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

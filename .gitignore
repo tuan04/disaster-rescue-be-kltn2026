@@ -1,24 +1,41 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
+# cấu hình cá nhân - ide
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
 
-# Logs
-logs
+# target
+target/
+**/target/
+
+# logs
 *.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+logs/
+**/logs/
 
-# dotenv environment variable files
+# NetBeans & STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.sts4-cache
+
+# environtment
 .env
-.env.development
-.env.test
-.env.production
+.env.local
+**/ .env
+**/ .env.local
 
-# temp directory
-.temp
-.tmp
+# Loại bỏ rác dữ liệu của Database nếu cấu hình map ổ đĩa Docker ra ngoài
+docker/data/
+mysql_data/
+postgres_data/

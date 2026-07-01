@@ -8,9 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>dispatch-service</artifactId>
-    <name>dispatch-service</name>
-    <description>dispatch-service</description>
+    <artifactId>integration-service</artifactId>
+    <name>integration-service</name>
+    <description>integration-service</description>
     <url/>
     <licenses>
         <license/>
@@ -28,7 +28,7 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -61,27 +61,9 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-spatial</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-        <groupId>org.hibernate.orm</groupId>
-        <artifactId>hibernate-spatial</artifactId>
-    </dependency>
     </dependencies>
 
     <build>

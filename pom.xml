@@ -16,6 +16,7 @@
     <description>Parent POM for Disaster Rescue Project</description>
 
     <modules>
+        <module>core-service/common-lib</module>
         <module>core-service/dispatch-service</module>
         <module>core-service/integration-service</module>
         <module>core-service/notification-service</module>

@@ -3,7 +3,7 @@ package iuh.fit.dispatchservice;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"iuh.fit.common", "iuh.fit.dispatchservice"})
 public class DispatchServiceApplication {
 
     public static void main(String[] args) {

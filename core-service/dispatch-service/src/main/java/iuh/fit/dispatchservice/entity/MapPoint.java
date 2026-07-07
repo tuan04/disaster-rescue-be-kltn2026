@@ -29,6 +29,9 @@ public class MapPoint {
     @Column(name = "location", columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
+    @Column(name = "sub_type")
+    private String subType;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

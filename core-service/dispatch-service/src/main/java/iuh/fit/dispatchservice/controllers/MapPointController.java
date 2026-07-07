@@ -1,5 +1,7 @@
 package iuh.fit.dispatchservice.controllers;
 
+import iuh.fit.common.response.ApiResponse;
+import iuh.fit.dispatchservice.dtos.MapPointRes;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.services.MapPointService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,7 @@ public class MapPointController {
     private final MapPointService mapPointService;
 
     @GetMapping
-    public ResponseEntity<List<MapPoint>> getAllMapPoints() {
-        return ResponseEntity.ok(mapPointService.getAllMapPoints());
+    public ResponseEntity<ApiResponse<List<MapPointRes>>> getAllMapPoints() {
+        return ResponseEntity.ok(ApiResponse.success(mapPointService.getAllMapPoints()));
     }
 }

@@ -4,38 +4,40 @@ server:
 spring:
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-      routes:
-        - id: user-service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/api/v1/users/**, /api/v1/auth/**
-        - id: dispatch-service
-          uri: lb://DISPATCH-SERVICE
-          predicates:
-            - Path=/api/v1/dispatches/**
-        - id: resource-management-service
-          uri: lb://RESOURCE-MANAGEMENT-SERVICE
-          predicates:
-            - Path=/api/v1/resources/**
-        - id: integration-service
-          uri: lb://INTEGRATION-SERVICE
-          predicates:
-            - Path=/api/v1/ai/**
-        - id: notification-service
-          uri: lb://NOTIFICATION-SERVICE
-          predicates:
-            - Path=/api/v1/notifications/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+          routes:
+            - id: user-service
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/v1/users/**, /api/v1/auth/**
+            - id: dispatch-service
+              uri: lb://DISPATCH-SERVICE
+              predicates:
+                - Path=/api/v1/dispatches/**, /api/v1/map-points/**
+            - id: resource-management-service
+              uri: lb://RESOURCE-MANAGEMENT-SERVICE
+              predicates:
+                - Path=/api/v1/resources/**
+            - id: integration-service
+              uri: lb://INTEGRATION-SERVICE
+              predicates:
+                - Path=/api/v1/ai/**
+            - id: notification-service
+              uri: lb://NOTIFICATION-SERVICE
+              predicates:
+                - Path=/api/v1/notifications/**
 
 eureka:
   client:

@@ -26,7 +26,7 @@ public class RescueRequest {
     @JoinColumn(name = "id")
     private MapPoint mapPoint;
 
-    @Column(name = "reporter_id", unique = true, nullable = false)
+    @Column(name = "reporter_id", unique = true)
     private UUID reporterId;
 
     @Column(name = "reporter_phone", length = 10)

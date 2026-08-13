@@ -1,4 +1,4 @@
-package iuh.fit.dispatchservice.dtos;
+package iuh.fit.dispatchservice.dtos.response;
 
 import iuh.fit.dispatchservice.enums.PointType;
 import lombok.Getter;
@@ -13,5 +13,7 @@ public class MapPointRes {
     private PointType pointType;
     private double latitude;
     private double longitude;
+    private String priority;
     private String subType;
+    private String status;
 }

@@ -3,7 +3,6 @@ package iuh.fit.dispatchservice.entity;
 import iuh.fit.dispatchservice.enums.PointType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.geolatte.geom.Geometry;
 import org.hibernate.annotations.CreationTimestamp;
 import org.locationtech.jts.geom.Point;
 
@@ -28,9 +27,6 @@ public class MapPoint {
 
     @Column(name = "location", columnDefinition = "geometry(Point, 4326)")
     private Point location;
-
-    @Column(name = "sub_type")
-    private String subType;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

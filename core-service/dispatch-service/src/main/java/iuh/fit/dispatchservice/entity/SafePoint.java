@@ -1,5 +1,6 @@
 package iuh.fit.dispatchservice.entity;
 
+import iuh.fit.dispatchservice.enums.SafePointType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +25,8 @@ public class SafePoint {
 
     private String name;
 
-    @Column(name = "max_capacity")
-    private Integer maxCapacity;
+    @Column(name = "safe_point_type")
+    private SafePointType safePointType;
 
     @Column(name = "current_people")
     private Integer currentPeople;

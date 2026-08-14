@@ -7,6 +7,7 @@ import iuh.fit.dispatchservice.enums.RequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -26,7 +27,7 @@ public class RescueRequest {
     @JoinColumn(name = "id")
     private MapPoint mapPoint;
 
-    @Column(name = "reporter_id", unique = true, nullable = false)
+    @Column(name = "reporter_id", unique = true)
     private UUID reporterId;
 
     @Column(name = "reporter_phone", length = 10)
@@ -41,6 +42,9 @@ public class RescueRequest {
 
     @Column(name = "feed_id")
     private UUID feedId;
+
+    @Column(name = "complete_at")
+    private LocalDateTime completeAt;
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;

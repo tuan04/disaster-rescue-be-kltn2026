@@ -25,6 +25,8 @@ public class MapPoint {
     @Column(name = "point_type")
     private PointType pointType;
 
+    private String address;
+
     @Column(name = "location", columnDefinition = "geometry(Point, 4326)")
     private Point location;
 

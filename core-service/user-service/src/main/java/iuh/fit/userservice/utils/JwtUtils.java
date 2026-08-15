@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JwtUtils {
-    private static final long ACCESS_TOKEN_EXPIRATION = 900000; // 15 p
+    private static final long ACCESS_TOKEN_EXPIRATION = 60000*15; // 15 p
     private static final long RESET_PASSWORD_TOKEN_EXPIRATION = 300000; // 5 p
     private static final long REFRESH_TOKEN_EXPIRATION = 604800000; // 7 ngày
 

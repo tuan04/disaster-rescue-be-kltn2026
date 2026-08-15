@@ -5,6 +5,7 @@ import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.userservice.dto.request.*;
 import iuh.fit.userservice.dto.response.LoginResponse;
+import iuh.fit.userservice.dto.response.ResetTokenResponse;
 import iuh.fit.userservice.dto.response.UserInfoResponse;
 import iuh.fit.userservice.entity.User;
 import iuh.fit.userservice.redis.OtpRedisService;
@@ -61,7 +62,7 @@ public class AuthController {
         String accessToken = jwtUtils.generateAccessToken(userInfoResponse);
         String refreshToken = jwtUtils.generateRefreshToken(userInfoResponse);
         if ("MOBILE".equalsIgnoreCase(clientType)) {
-            LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken);
+            LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken, userInfoResponse);
             return ResponseEntity.ok(ApiResponse.success(loginResponse));
         }
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -74,6 +75,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         LoginResponse loginResponse = LoginResponse.builder()
                 .accessToken(accessToken)
+                .userInfoResponse(userInfoResponse)
                 .build();
         return ResponseEntity.ok(ApiResponse.success(loginResponse));
     }
@@ -117,6 +119,8 @@ public class AuthController {
 
         LoginResponse loginResponse = LoginResponse.builder()
                 .accessToken(accessToken)
+                .userInfoResponse(userInfoResponse)
+                .refreshToken(actualRefreshToken)
                 .build();
         return ResponseEntity.ok(ApiResponse.success(loginResponse));
     }
@@ -177,18 +181,21 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password/verify-otp")
-    public ApiResponse<?> forgotVerifyOtp(@Validated @RequestBody OtpVerificationRequest otpVerificationRequest) {
+    public ResponseEntity<ApiResponse<?>> forgotVerifyOtp(@Validated @RequestBody OtpVerificationRequest otpVerificationRequest) {
         boolean isValidOtp = otpRedisService.verifyOtp("opt:" + otpVerificationRequest.getId(), otpVerificationRequest.getOtp());
         if(!isValidOtp) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid OTP");
         }
         String resetToken = jwtUtils.generateResetToken( otpVerificationRequest.getPhoneNumber(), otpVerificationRequest.getId());
-
-        return ApiResponse.success(resetToken, "OTP verified successfully");
+        ResetTokenResponse resetTokenResponse = ResetTokenResponse.builder()
+                .resetToken(resetToken)
+                .build();
+        System.out.println("Reset token generated: " + resetToken);
+        return ResponseEntity.ok(ApiResponse.success(resetTokenResponse, "OTP verified successfully"));
     }
 
     @PostMapping("/forgot-password/reset-password")
-    public ApiResponse<?> resetPassword(
+    public ResponseEntity<ApiResponse<?>> resetPassword(
             @Validated @RequestBody ResetPasswordRequest resetPasswordRequest,
             @RequestHeader(value = "reset-token", required = true) String resetToken
     ) {
@@ -198,10 +205,32 @@ public class AuthController {
         UUID userId = jwtUtils.extractId(resetToken);
         boolean isReset = authService.resetPassword(userId, resetPasswordRequest);
         if(isReset) {
-            return ApiResponse.success(true, "Password reset successfully");
+            return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
         }
 
         return null;
+    }
+
+
+    @GetMapping("/user-info")
+    public ResponseEntity<ApiResponse<?>> getUserInfo(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = true) String bearerToken
+    ) {
+        if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Missing or invalid Authorization header");
+        }
+        String accessToken = bearerToken.substring(7);
+        if(jwtUtils.isTokenExpired(accessToken)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Access token is expired");
+        }
+        UUID userId = jwtUtils.extractId(accessToken);
+        UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+                .id(userId)
+                .fullName(jwtUtils.extractFullName(accessToken))
+                .role(jwtUtils.extractRole(accessToken))
+                .phone(jwtUtils.extractPhone(accessToken))
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(userInfoResponse));
     }
 
 

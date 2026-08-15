@@ -60,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(RoleEnum.RESCUER)
                 .isDeleted(false)
                 .build();
+        User savedUser = userRepository.save(user);
         VolunteerProfile volunteerProfile = VolunteerProfile.builder()
                 .user(user)
                 .cccdNumber(request.getCccdNumber())
@@ -97,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .phone(user.getPhone())
                 .build();
     }
 

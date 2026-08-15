@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.management.relation.Role;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,8 +23,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(length = 10)
+    @Column(length = 10, nullable = false, unique = true)
     private String phone;
+
+    @Column(name = "full_name", length = 100, nullable = false)
+    private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
@@ -36,9 +40,21 @@ public class User {
     @Column(length = 20)
     private RoleEnum role;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
+
+    @Column(name = "is_validated", nullable = false)
+    private boolean isValidated;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     private VolunteerProfile volunteerProfile;

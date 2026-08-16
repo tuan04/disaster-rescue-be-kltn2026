@@ -25,11 +25,9 @@ public class SafePoint {
 
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "safe_point_type")
     private SafePointType safePointType;
-
-    @Column(name = "current_people")
-    private Integer currentPeople;
 
     @Column(name = "contact_phone")
     private String contactPhone;

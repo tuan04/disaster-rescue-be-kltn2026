@@ -2,6 +2,7 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.dispatchservice.dtos.request.MapPointFilterRequest;
 import iuh.fit.dispatchservice.dtos.response.*;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.repositories.*;
@@ -17,14 +18,15 @@ import java.util.UUID;
 
 public class MapPointService {
     private final MapPointRepository mapPointRepository;
+    private final MapPointSearchRepository mapPointSearchRepository;
     private final RescueRequestRepository rescueRequestRepository;
     private final SafePointRepository safePointRepository;
     private final WarehouseRepository warehouseRepository;
     private final HazardReportRepository hazardReportRepository;
     private final MapPointMapper mapPointMapper;
 
-    public List<MapPointRes> getAllMapPoints() {
-        return mapPointMapper.toResDTO(mapPointRepository.findMapPoints());
+    public List<MapPointRes> getAllMapPoints(MapPointFilterRequest filter) {
+        return mapPointSearchRepository.findMapPoints(filter);
     }
 
     private RescueDetailResponse getRescueDetail(UUID id) {
@@ -40,13 +42,17 @@ public class MapPointService {
                         new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)
                 ));
 
-    }private SafePointDetailResponse getSafePointDetail(UUID id) {
+    }
+
+    private SafePointDetailResponse getSafePointDetail(UUID id) {
         return mapPointMapper.toResDTO(safePointRepository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)
                 ));
 
-    }private WarehouseDetailResponse getWarehouseDetail(UUID id) {
+    }
+
+    private WarehouseDetailResponse getWarehouseDetail(UUID id) {
         return mapPointMapper.toResDTO(warehouseRepository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.RESOURCE_NOT_FOUND)
@@ -71,6 +77,8 @@ public class MapPointService {
                 point.getPointType(),
                 mapPointMapper.toLatitude(point.getLocation()),
                 mapPointMapper.toLongitude(point.getLocation()),
+                point.getAddress(),
+                point.getCreatedAt(),
                 detail
         );
     }

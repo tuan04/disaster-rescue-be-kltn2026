@@ -1,12 +1,14 @@
 package iuh.fit.dispatchservice.dtos.response;
 
+import iuh.fit.dispatchservice.enums.SafePointType;
+
 import java.util.UUID;
 
 public record SafePointDetailResponse(
         UUID id,
         String name,
-        Integer maxCapacity,
-        Integer currentPeople,
         String contactPhone,
+        SafePointType safePointType,
         Boolean isActive
-) implements MapPointDetailResInterface { }
+) implements MapPointDetailResInterface {
+}

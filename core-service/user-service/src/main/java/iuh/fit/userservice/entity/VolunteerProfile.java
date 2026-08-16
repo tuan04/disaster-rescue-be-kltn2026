@@ -20,20 +20,14 @@ public class VolunteerProfile {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
-
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "cccd_number", length = 12)
+    private String cccdNumber;
 
     @Column(name = "team_name")
     private String teamName;
 
     @Column(name = "team_id")
     private UUID teamId;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verified_status", length = 20)

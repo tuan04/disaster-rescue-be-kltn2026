@@ -30,6 +30,9 @@ public class MapPoint {
     @Column(name = "location", columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
+    @Column(name = "is_visible", columnDefinition = "boolean default true")
+    private Boolean isVisible;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

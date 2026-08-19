@@ -88,6 +88,7 @@ public class AuthController {
         final String actualRefreshToken = StringUtils.hasText(cookieRefreshToken)
                 ? cookieRefreshToken
                 : headerRefreshToken;
+        System.out.println(actualRefreshToken);
 
         if(actualRefreshToken == null || actualRefreshToken.trim().isEmpty()){
             throw new BusinessException(ErrorCode.FORBIDDEN, "Refresh token is missing");

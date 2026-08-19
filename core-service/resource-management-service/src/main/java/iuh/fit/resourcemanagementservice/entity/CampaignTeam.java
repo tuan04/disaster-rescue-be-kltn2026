@@ -27,16 +27,21 @@ public class CampaignTeam {
     @JoinColumn(name = "campaign_id")
     private Campaign campaign;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private RescueTeam rescueTeam;
-
     @Column(name = "total_participants")
     private Integer totalParticipants;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "team_name")
+    private String teamName;
+
+    @Column(name = "leader_id")
+    private UUID leaderId;
+
+    @Column(name = "leader_phone")
+    private String leaderPhone;
 
     // Mapping mảng Enum của PostgreSQL sang List Java
     @JdbcTypeCode(SqlTypes.ARRAY)

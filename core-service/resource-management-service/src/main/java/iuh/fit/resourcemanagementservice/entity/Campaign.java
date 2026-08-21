@@ -30,6 +30,4 @@ public class Campaign {
 
     @Enumerated(EnumType.STRING)
     private CampaignStatus status;
-
-    private String province;
 }

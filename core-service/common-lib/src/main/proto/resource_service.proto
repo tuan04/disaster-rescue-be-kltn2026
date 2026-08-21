@@ -1,0 +1,19 @@
+syntax = "proto3";
+package iuh.fit.common.grpc;
+
+option java_package = "iuh.fit.common.grpc";
+option java_multiple_files = true;
+
+service ResourceTeamGrpcService {
+    rpc GetTeamByLeaderId (GetTeamByLeaderRequest) returns (TeamInfoResponse);
+}
+
+message GetTeamByLeaderRequest {
+    string leader_id = 1;
+}
+
+message TeamInfoResponse {
+    string campaign_team_id = 1;
+    string team_name = 2;
+    string leader_phone = 3;
+}

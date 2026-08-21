@@ -2,6 +2,12 @@ server:
   port: 8083
 
 spring:
+  grpc:
+    client:
+      channel:
+        resource-management-service:
+          target: static://localhost:9092
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DISPATCH_DB_NAME:dispatch_db}
     username: ${DB_USER:postgres}

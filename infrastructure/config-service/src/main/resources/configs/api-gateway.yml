@@ -27,7 +27,7 @@ spring:
             - id: dispatch-service
               uri: lb://DISPATCH-SERVICE
               predicates:
-                - Path=/api/v1/dispatches/**, /api/v1/map-points/**
+                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/assignments/**
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:

@@ -3,8 +3,6 @@ package iuh.fit.userservice.entity;
 import iuh.fit.userservice.enums.VerifiedStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity

@@ -7,7 +7,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "items")
+@Table(name = "team_mobile_inventory")
 @Getter
 @Setter
 @AllArgsConstructor

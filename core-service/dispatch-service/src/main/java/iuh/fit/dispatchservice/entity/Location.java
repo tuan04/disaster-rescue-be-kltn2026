@@ -5,13 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 
-import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "map_points")
+@Table(name = "locations")
 @Getter
 @Setter
 @NoArgsConstructor

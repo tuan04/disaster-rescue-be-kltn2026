@@ -33,7 +33,15 @@ public class MapPoint {
     @Column(name = "is_visible", columnDefinition = "boolean default true")
     private Boolean isVisible;
 
+    @Column(name = "location_id")
+    private UUID locationId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

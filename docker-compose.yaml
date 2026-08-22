@@ -27,9 +27,52 @@ services:
     networks:
       - sos_network
 
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: sos_kafka
+    restart: always
+    ports:
+      - "9094:9094"
+    environment:
+      # Bật KRaft Mode (Không cần Zookeeper)
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Cấu hình mạng: 29092 cho nội bộ, 9094 cho Spring Boot bên ngoài
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,EXTERNAL://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Thiết lập Cluster cho môi trường 1 node
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: 'sos-rescue-cluster-12345' # Bắt buộc phải có chuỗi này để khởi tạo KRaft
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - sos_network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: sos_kafka_ui
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: sos_cluster_kraft
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - sos_network
 volumes:
   postgres_data:
   redis_data:
+  kafka_data:
 
 networks:
   sos_network:

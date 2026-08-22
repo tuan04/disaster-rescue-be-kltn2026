@@ -2,8 +2,22 @@ server:
   port: 8085
 
 spring:
-  mongodb:
-    uri: ${MONGO_INTEGRATION_URI}
+#  mongodb:
+#    uri: ${MONGO_INTEGRATION_URI}
+  # kafka:
+  #   bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9094}
+  #   consumer:
+  #     group-id: ai-evaluation-group
+  #     auto-offset-reset: earliest
+  #     key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+  #     value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+  #     properties:
+  #       spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+  #       spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+  #       spring.json.use.type.headers: true
+  #       spring.json.trusted.packages: "iuh.fit.*"
+  #       spring.json.type.mapping: >
+  #         sos_event:iuh.fit.integration.dtos.RescueDetailResponse
 
 eureka:
   client:

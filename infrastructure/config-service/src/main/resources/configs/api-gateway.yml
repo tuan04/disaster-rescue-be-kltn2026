@@ -2,6 +2,11 @@ server:
   port: 8000
 
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
   cloud:
     gateway:
       server:
@@ -19,6 +24,8 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
                 allowCredentials: true
+          default-filters:
+            - JwtAuthFilter
           routes:
             - id: user-service
               uri: lb://USER-SERVICE
@@ -27,7 +34,7 @@ spring:
             - id: dispatch-service
               uri: lb://DISPATCH-SERVICE
               predicates:
-                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/assignments/**
+                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**, /api/v1/assignments/**
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:
@@ -51,3 +58,6 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+rsa:
+  private-key-path: ${RSA_PRIVATE_PATH}
+  public-key-path: ${RSA_PUBLIC_PATH}

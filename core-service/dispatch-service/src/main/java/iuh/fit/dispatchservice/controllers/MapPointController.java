@@ -7,11 +7,7 @@ import iuh.fit.dispatchservice.dtos.response.MapPointRes;
 import iuh.fit.dispatchservice.services.MapPointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +15,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/map-points")
 @RequiredArgsConstructor
-
 public class MapPointController {
     private final MapPointService mapPointService;
 
@@ -36,4 +31,7 @@ public class MapPointController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(mapPointService.getDetail(id)));
     }
+
+
+
 }

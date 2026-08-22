@@ -8,12 +8,14 @@ import lombok.Builder;
 import java.util.UUID;
 
 @Builder
-public record RescueDetailResponse(
+public record SOSResponse(
         UUID id,
         String reporterPhone,
         EmergencyLevel emergencyLevel,
         String content,
         RequestStatus status,
-        RequestSource source
-) implements MapPointDetailResInterface {
+        RequestSource source,
+        double latitude,
+        double longitude
+) {
 }

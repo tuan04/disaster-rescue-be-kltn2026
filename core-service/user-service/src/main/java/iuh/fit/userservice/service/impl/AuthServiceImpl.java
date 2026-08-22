@@ -3,7 +3,6 @@ package iuh.fit.userservice.service.impl;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.userservice.dto.request.*;
-import iuh.fit.userservice.dto.response.LoginResponse;
 import iuh.fit.userservice.dto.response.UserInfoResponse;
 import iuh.fit.userservice.entity.User;
 import iuh.fit.userservice.entity.VolunteerProfile;
@@ -73,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Boolean verifyOtp(OtpVerificationRequest request) {
         boolean isValidOtp = otpRedisService.verifyOtp("opt:" + request.getId(), request.getOtp());
-        if(!isValidOtp) {
+        if (!isValidOtp) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid OTP");
         }
         User existingUser = userRepository.findById(request.getId())
@@ -106,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
     public UserInfoResponse forgotPasswordRequest(String phone) {
         System.out.println("Forgot password request for phone: " + phone);
         User user = userRepository.findByPhone(phone);
-        if(user == null) {
+        if (user == null) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Phone number not found");
         }
         otpRedisService.generateAndSaveOtp("opt:" + user.getId());
@@ -121,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
     public Boolean resetPassword(UUID id, ResetPasswordRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
-        if(!request.getPassword().equals(request.getConfirmPassword())) {
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Password and confirm password do not match");
         }
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -129,15 +128,14 @@ public class AuthServiceImpl implements AuthService {
         return true;
     }
 
-
-    private void validateRegister(CitizenRegisterRequest request){
+    private void validateRegister(CitizenRegisterRequest request) {
         boolean existsByPhone = userRepository.existsByPhone(request.getPhone());
         // check if phone number already exists in the database
-        if(existsByPhone) {
+        if (existsByPhone) {
             throw new BusinessException(ErrorCode.CONFLICT, "Phone number already exists");
         }
         // check if password and confirm password are the same
-        if(!request.getPassword().equals(request.getConfirmPassword())){
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Password and confirm password do not match");
         }
     }

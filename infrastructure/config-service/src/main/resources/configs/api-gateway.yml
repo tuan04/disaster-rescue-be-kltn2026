@@ -13,7 +13,7 @@ spring:
         webflux:
           globalcors:
             cors-configurations:
-              '[/**]':
+              "[/**]":
                 allowedOrigins:
                   - "http://localhost:5173"
                 allowedMethods:
@@ -34,7 +34,7 @@ spring:
             - id: dispatch-service
               uri: lb://DISPATCH-SERVICE
               predicates:
-                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**
+                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**, /api/v1/assignments/**
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:
@@ -47,6 +47,10 @@ spring:
               uri: lb://NOTIFICATION-SERVICE
               predicates:
                 - Path=/api/v1/notifications/**
+            - id: notification-websocket-route
+              uri: lb:ws://NOTIFICATION-SERVICE
+              predicates:
+                - Path=/ws/**
 
 eureka:
   client:

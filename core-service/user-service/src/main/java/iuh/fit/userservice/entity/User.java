@@ -5,8 +5,6 @@ import iuh.fit.userservice.enums.SexEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-
-import javax.management.relation.Role;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -56,6 +54,6 @@ public class User {
     @Column(name = "is_validated", nullable = false)
     private boolean isValidated;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private VolunteerProfile volunteerProfile;
 }

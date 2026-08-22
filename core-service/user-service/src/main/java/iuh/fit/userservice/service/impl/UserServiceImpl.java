@@ -1,7 +1,5 @@
 package iuh.fit.userservice.service.impl;
 
-import iuh.fit.common.exception.BusinessException;
-import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.userservice.repository.UserRepository;
 import iuh.fit.userservice.service.UserService;
 import lombok.AllArgsConstructor;

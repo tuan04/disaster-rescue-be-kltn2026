@@ -21,7 +21,6 @@ import java.util.UUID;
 @Service
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
-    private final VolunteerProfileRepository volunteerProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpRedisService otpRedisService;
 

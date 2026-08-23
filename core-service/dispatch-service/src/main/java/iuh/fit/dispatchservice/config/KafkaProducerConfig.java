@@ -1,4 +1,4 @@
-package iuh.fit.dispatchservice.configs;
+package iuh.fit.dispatchservice.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;

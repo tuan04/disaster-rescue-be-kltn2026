@@ -16,6 +16,7 @@ public record SOSResponse(
         RequestStatus status,
         RequestSource source,
         double latitude,
-        double longitude
+        double longitude,
+        Integer radiusMeters
 ) {
 }

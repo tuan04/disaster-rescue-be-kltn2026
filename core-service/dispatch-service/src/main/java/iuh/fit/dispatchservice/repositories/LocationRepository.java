@@ -11,6 +11,14 @@ import java.util.UUID;
 public interface LocationRepository extends JpaRepository<Location, UUID> {
 
     @Query(value = """
+            SELECT * FROM locations l 
+            WHERE ST_Covers(l.boundary, ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)) = true 
+              AND (l.is_active = true OR l.is_active IS NULL) 
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<Location> findLocationContainingCoordinates(@Param("longitude") double longitude, @Param("latitude") double latitude);
+
+    @Query(value = """
             SELECT l.id FROM locations l 
             WHERE ST_Covers(l.boundary, ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)) = true 
               AND (l.is_active = true OR l.is_active IS NULL) 

@@ -1,4 +1,4 @@
-package iuh.fit.notificationservice.configs;
+package iuh.fit.notificationservice.config;
 
 import iuh.fit.notificationservice.dtos.SOSResponse;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

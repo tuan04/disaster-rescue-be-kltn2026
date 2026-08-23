@@ -19,4 +19,5 @@ public class SOSResponse {
     private String source;
     private double latitude;
     private double longitude;
+    private Integer radiusMeters;
 }

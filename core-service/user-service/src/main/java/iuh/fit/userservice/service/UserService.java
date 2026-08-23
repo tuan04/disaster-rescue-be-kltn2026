@@ -6,5 +6,6 @@ import java.util.UUID;
 
 public interface UserService {
     public boolean checkUserExist(UUID userId);
+
     public boolean upgradeToRescuer(UpgradeRescuerRequest request);
 }

@@ -26,7 +26,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean upgradeToRescuer(UpgradeRescuerRequest request) {
-        if(userRepository.existsById(request.getId())) {
+        if (userRepository.existsById(request.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "User is already a rescuer");
         }
         VolunteerProfile volunteerProfile = volunteerProfileRepository.findByUserId(request.getId());

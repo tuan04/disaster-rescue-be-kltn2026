@@ -1,8 +1,7 @@
 package iuh.fit.apigateway.filter;
 
 import iuh.fit.apigateway.utils.JwtUtils;
-import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
@@ -14,13 +13,12 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Config> {
 
     private final JwtUtils jwtUtil;
 
-    // Inject JwtUtil của bạn vào đây để giải mã token
-    // @Autowired
-    // private JwtUtil jwtUtil;
+
     public JwtAuthFilter(JwtUtils jwtUtil) {
         super(Config.class);       // Bắt buộc phải có để khởi tạo Filter
         this.jwtUtil = jwtUtil;    // Gán giá trị cho biến final
@@ -55,6 +53,7 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 return chain.filter(exchange);
 
             } catch (Exception e) {
+                log.error("JWT validation error on path [{}]: {}", exchange.getRequest().getPath(), e.getMessage());
                 // Báo lỗi 401 nếu token hết hạn hoặc sai chữ ký
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }

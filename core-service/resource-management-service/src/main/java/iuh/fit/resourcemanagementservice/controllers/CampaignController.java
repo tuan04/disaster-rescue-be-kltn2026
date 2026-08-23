@@ -35,7 +35,7 @@ public class CampaignController {
     /**
      * API Cập nhật Chiến dịch (Update Campaign)
      */
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<CampaignResponse>> updateCampaign(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateCampaignRequest request

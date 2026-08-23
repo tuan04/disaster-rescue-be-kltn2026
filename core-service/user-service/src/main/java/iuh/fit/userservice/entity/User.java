@@ -44,8 +44,7 @@ public class User {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDate createdAt;
+
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
@@ -57,17 +56,19 @@ public class User {
     private VolunteerProfile volunteerProfile;
 
 
-    @Column(name = "modified_at")
-    private LocalDate modifiedAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
+    @Column(name = "modified_at")
+    private LocalDateTime modifiedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDate.now();
+        createdAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        modifiedAt = LocalDate.now();
+        modifiedAt = LocalDateTime.now();
     }
 }

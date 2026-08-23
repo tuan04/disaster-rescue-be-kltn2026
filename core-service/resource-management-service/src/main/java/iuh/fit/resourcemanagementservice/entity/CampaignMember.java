@@ -1,11 +1,10 @@
 package iuh.fit.resourcemanagementservice.entity;
 
-
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -16,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class CampaignMember {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -24,26 +24,28 @@ public class CampaignMember {
     @JoinColumn(name = "campaign_team_id")
     private CampaignTeam campaignTeam;
 
-    @Column(name = "member_id")
+    @Column(name = "member_id", nullable = false)
     private UUID memberId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role_in_team")
+    @Column(name = "role_in_team", nullable = false, length = 20)
     private TeamRole roleInTeam;
 
-    @Column(name = "created_at")
-    private LocalDate createdAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "modified_at")
-    private LocalDate modifiedAt;
+    private LocalDateTime modifiedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDate.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        modifiedAt = LocalDate.now();
+        modifiedAt = LocalDateTime.now();
     }
 }

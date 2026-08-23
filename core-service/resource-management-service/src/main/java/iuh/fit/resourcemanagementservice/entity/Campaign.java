@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -33,22 +34,19 @@ public class Campaign {
     @Column(name = "status", nullable = false, length = 20)
     private CampaignStatus status;
 
-    @Column(name = "province", nullable = false)
-    private String province;
-
-    @Column(name = "created_at")
-    private LocalDate createdAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "modified_at")
-    private LocalDate modifiedAt;
+    private LocalDateTime modifiedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDate.now();
+        createdAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        modifiedAt = LocalDate.now();
+        modifiedAt = LocalDateTime.now();
     }
 }

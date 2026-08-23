@@ -9,7 +9,6 @@ import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +34,6 @@ public class CampaignTeamService {
     public TeamResponse createTeam(CreateTeamRequest request) {
 
         CampaignTeam team = CampaignTeam.builder()
-                .campaignId(request.campaignId())
                 .teamName(request.teamName() != null ? request.teamName().trim() : null)
                 .leaderId(request.leaderId())
                 .leaderPhone(request.leaderPhone().trim())
@@ -51,7 +49,8 @@ public class CampaignTeamService {
     }
 
     /**
-     * Cập nhật thông tin Đội Cứu hộ theo ID
+     * Cập nhật thông tin Đội Cứu hộ theo ID (Cập nhật linh hoạt - Partial Update)
+     * Chỉ cập nhật các trường được truyền lên (khác null).
      */
     @Transactional
     public TeamResponse updateTeam(UUID id, UpdateTeamRequest request) {
@@ -62,18 +61,33 @@ public class CampaignTeamService {
                         "Không tìm thấy đội cứu hộ với ID: " + id
                 ));
 
-        existingTeam.setCampaignId(request.campaignId());
-        existingTeam.setTotalParticipants(request.totalParticipants() != null ? request.totalParticipants() : 0);
-        existingTeam.setStatus(request.status());
-        existingTeam.setVehicles(request.vehicles() != null ? new ArrayList<>(request.vehicles()) : new ArrayList<>());
-        existingTeam.setTeamName(request.teamName() != null ? request.teamName().trim() : null);
-        existingTeam.setLeaderId(request.leaderId());
-        existingTeam.setLeaderPhone(request.leaderPhone().trim());
+        if (request.totalParticipants() != null) {
+            existingTeam.setTotalParticipants(request.totalParticipants());
+        }
+
+        if (request.status() != null) {
+            existingTeam.setStatus(request.status());
+        }
+
+        if (request.vehicles() != null) {
+            existingTeam.setVehicles(new ArrayList<>(request.vehicles()));
+        }
+
+        if (request.teamName() != null) {
+            existingTeam.setTeamName(request.teamName().trim());
+        }
+
+        if (request.leaderId() != null) {
+            existingTeam.setLeaderId(request.leaderId());
+        }
+
+        if (request.leaderPhone() != null && !request.leaderPhone().isBlank()) {
+            existingTeam.setLeaderPhone(request.leaderPhone().trim());
+        }
 
         CampaignTeam updatedTeam = campaignTeamRepository.save(existingTeam);
         return TeamResponse.fromEntity(updatedTeam);
     }
-
 
     /**
      * Truy vấn thông tin đội cứu hộ theo Leader ID (phục vụ gRPC/nội bộ)

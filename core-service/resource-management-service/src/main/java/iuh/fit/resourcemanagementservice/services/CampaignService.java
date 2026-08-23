@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -32,7 +33,6 @@ public class CampaignService {
                 .startDate(request.getStartDate())
                 .endDate(null)
                 .status(CampaignStatus.ACTIVE)
-                .province(request.getProvince().trim())
                 .build();
 
         Campaign savedCampaign = campaignRepository.save(campaign);
@@ -52,18 +52,28 @@ public class CampaignService {
                         "Không tìm thấy chiến dịch với ID: " + id
                 ));
 
-        if (request.getEndDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
+        LocalDate effectiveStartDate = request.getStartDate() != null ? request.getStartDate() : existingCampaign.getStartDate();
+        LocalDate effectiveEndDate = request.getEndDate() != null ? request.getEndDate() : existingCampaign.getEndDate();
+
+        if (effectiveEndDate != null && effectiveStartDate != null && effectiveEndDate.isBefore(effectiveStartDate)) {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT, 
                     "Ngày kết thúc không được trước ngày bắt đầu"
             );
         }
 
-        existingCampaign.setName(request.getName().trim());
-        existingCampaign.setStartDate(request.getStartDate());
-        existingCampaign.setEndDate(request.getEndDate());
-        existingCampaign.setStatus(request.getStatus());
-        existingCampaign.setProvince(request.getProvince().trim());
+        if (request.getName() != null && !request.getName().isBlank()) {
+            existingCampaign.setName(request.getName().trim());
+        }
+        if (request.getStartDate() != null) {
+            existingCampaign.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            existingCampaign.setEndDate(request.getEndDate());
+        }
+        if (request.getStatus() != null) {
+            existingCampaign.setStatus(request.getStatus());
+        }
 
         Campaign updatedCampaign = campaignRepository.save(existingCampaign);
 

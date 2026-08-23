@@ -22,6 +22,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Mở cửa tự do cho toàn bộ các API bắt đầu bằng /api/v1/auth/
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/users/**").permitAll()
 
                         // Các API khác (nếu có) bắt buộc phải có Token hợp lệ
                         .anyRequest().authenticated()

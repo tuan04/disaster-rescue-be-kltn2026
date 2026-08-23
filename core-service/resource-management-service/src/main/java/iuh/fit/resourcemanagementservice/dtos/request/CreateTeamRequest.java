@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record CreateTeamRequest(
+        @NotNull(message = "campaignId không được để trống")
         UUID campaignId,
 
         @Size(max = 255, message = "Tên đội không được vượt quá 255 ký tự")

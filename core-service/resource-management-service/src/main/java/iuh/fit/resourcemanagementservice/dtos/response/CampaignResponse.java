@@ -13,8 +13,7 @@ public record CampaignResponse(
         String name,
         LocalDate startDate,
         LocalDate endDate,
-        CampaignStatus status,
-        String province
+        CampaignStatus status
 ) {
     public static CampaignResponse fromEntity(Campaign campaign) {
         return CampaignResponse.builder()
@@ -23,7 +22,6 @@ public record CampaignResponse(
                 .startDate(campaign.getStartDate())
                 .endDate(campaign.getEndDate())
                 .status(campaign.getStatus())
-                .province(campaign.getProvince())
                 .build();
     }
 }

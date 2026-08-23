@@ -4,7 +4,7 @@ import iuh.fit.dispatchservice.enums.SafePointType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -36,19 +36,19 @@ public class SafePoint {
     @Column(name = "is_active", columnDefinition = "boolean default true")
     private Boolean isActive;
 
-    @Column(name = "created_at")
-    private LocalDate createdAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(name = "modified_at")
-    private LocalDate modifiedAt;
+    private LocalDateTime modifiedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDate.now();
+        createdAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        modifiedAt = LocalDate.now();
+        modifiedAt = LocalDateTime.now();
     }
 }

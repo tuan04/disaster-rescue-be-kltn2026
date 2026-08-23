@@ -34,7 +34,7 @@ public class CampaignTeamController {
     /**
      * API Cập nhật Đội Cứu hộ (Update Campaign Team)
      */
-    @PutMapping("/{id}")
+    @PatchMapping ("/{id}")
     public ResponseEntity<ApiResponse<TeamResponse>> updateCampaignTeam(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateTeamRequest request

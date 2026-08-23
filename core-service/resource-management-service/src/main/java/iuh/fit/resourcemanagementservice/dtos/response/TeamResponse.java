@@ -9,7 +9,6 @@ import java.util.UUID;
 
 public record TeamResponse(
         UUID id,
-        UUID campaignId,
         Integer totalParticipants,
         TeamStatus status,
         LocalDateTime createdAt,
@@ -21,7 +20,6 @@ public record TeamResponse(
     public static TeamResponse fromEntity(CampaignTeam team) {
         return new TeamResponse(
                 team.getId(),
-                team.getCampaignId(),
                 team.getTotalParticipants(),
                 team.getStatus(),
                 team.getCreatedAt(),

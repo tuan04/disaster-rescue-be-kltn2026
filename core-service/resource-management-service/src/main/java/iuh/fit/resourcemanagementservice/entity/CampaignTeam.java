@@ -24,9 +24,6 @@ public class CampaignTeam {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "campaign_id")
-    private UUID campaignId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "campaign_id", insertable = false, updatable = false)
     private Campaign campaign;

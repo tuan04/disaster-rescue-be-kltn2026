@@ -20,8 +20,4 @@ public class CreateCampaignRequest {
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDate startDate;
-
-    @NotBlank(message = "Tỉnh/Thành phố không được để trống")
-    @Size(max = 255, message = "Tên tỉnh/thành phố không được vượt quá 255 ký tự")
-    private String province;
 }

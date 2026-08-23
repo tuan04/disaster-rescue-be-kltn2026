@@ -44,9 +44,8 @@ public class User {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
-    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDate createdAt;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
@@ -56,4 +55,19 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private VolunteerProfile volunteerProfile;
+
+
+    @Column(name = "modified_at")
+    private LocalDate modifiedAt;
+
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDate.now();
+    }
 }

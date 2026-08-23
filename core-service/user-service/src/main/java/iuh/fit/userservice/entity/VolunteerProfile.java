@@ -3,6 +3,8 @@ package iuh.fit.userservice.entity;
 import iuh.fit.userservice.enums.VerifiedStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -34,4 +36,21 @@ public class VolunteerProfile {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
+
+    @Column(name = "created_at")
+    private LocalDate createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDate modifiedAt;
+
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDate.now();
+    }
 }

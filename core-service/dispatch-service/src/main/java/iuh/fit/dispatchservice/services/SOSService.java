@@ -2,7 +2,6 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.dispatchservice.dtos.request.SOSRequest;
 import iuh.fit.dispatchservice.dtos.response.SOSResponse;
-import iuh.fit.dispatchservice.entity.Location;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.EmergencyLevel;

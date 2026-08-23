@@ -4,6 +4,7 @@ package iuh.fit.resourcemanagementservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -28,4 +29,20 @@ public class TeamMobileInventory {
 
     @Column(name = "current_quantity")
     private Integer currentQuantity;
+
+    @Column(name = "created_at")
+    private LocalDate createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDate modifiedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDate.now();
+    }
 }

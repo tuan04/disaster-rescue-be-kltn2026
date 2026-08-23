@@ -7,6 +7,7 @@ import iuh.fit.dispatchservice.enums.RequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -52,4 +53,19 @@ public class RescueRequest {
     @Enumerated(EnumType.STRING)
     private RequestSource source;
 
+    @Column(name = "created_at")
+    private LocalDate createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDate modifiedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDate.now();
+    }
 }

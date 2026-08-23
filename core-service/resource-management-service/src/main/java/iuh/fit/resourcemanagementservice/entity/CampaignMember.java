@@ -5,6 +5,7 @@ import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -29,4 +30,20 @@ public class CampaignMember {
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team")
     private TeamRole roleInTeam;
+
+    @Column(name = "created_at")
+    private LocalDate createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDate modifiedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDate.now();
+    }
 }

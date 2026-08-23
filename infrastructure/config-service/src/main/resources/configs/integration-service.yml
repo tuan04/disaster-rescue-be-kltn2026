@@ -4,7 +4,16 @@ server:
 spring:
   mongodb:
     uri: ${MONGO_INTEGRATION_URI}
-
+  ai:
+    google:
+      genai:
+        api-key: ${GOOGLE_AI_API_KEY}
+        chat:
+          model: ${GOOGLE_AI_MODEL}
+        embedding:
+          api-key: ${GOOGLE_AI_API_KEY}
+          text:
+            model: ${GOOGLE_EMBEDDING_MODEL}
 eureka:
   client:
     service-url:

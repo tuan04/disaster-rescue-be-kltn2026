@@ -3,9 +3,11 @@ package iuh.fit.dispatchservice.dtos.response;
 import iuh.fit.dispatchservice.enums.EmergencyLevel;
 import iuh.fit.dispatchservice.enums.RequestSource;
 import iuh.fit.dispatchservice.enums.RequestStatus;
+import lombok.Builder;
 
 import java.util.UUID;
 
+@Builder
 public record RescueDetailResponse(
         UUID id,
         String reporterPhone,

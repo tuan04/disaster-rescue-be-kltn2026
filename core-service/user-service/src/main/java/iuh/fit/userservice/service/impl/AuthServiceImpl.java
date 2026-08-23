@@ -21,7 +21,6 @@ import java.util.UUID;
 @Service
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
-    private final VolunteerProfileRepository volunteerProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpRedisService otpRedisService;
 
@@ -42,30 +41,6 @@ public class AuthServiceImpl implements AuthService {
         User saveUser = userRepository.save(user);
         otpRedisService.generateAndSaveOtp("opt:" + saveUser.getId());
 
-        return saveUser;
-    }
-
-    @Override
-    public User registerRescuer(VolunteerRegisterRequest request) {
-        validateRegister(request);
-
-        User user = User.builder()
-                .phone(request.getPhone())
-                .fullName(request.getFullName())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .birthDate(request.getBirthDate())
-                .sex(request.getSex())
-                .isValidated(false)
-                .role(RoleEnum.RESCUER)
-                .isDeleted(false)
-                .build();
-        User savedUser = userRepository.save(user);
-        VolunteerProfile volunteerProfile = VolunteerProfile.builder()
-                .user(user)
-                .cccdNumber(request.getCccdNumber())
-                .build();
-        User saveUser = volunteerProfileRepository.save(volunteerProfile).getUser();
-        otpRedisService.generateAndSaveOtp("opt:" + saveUser.getId());
         return saveUser;
     }
 

@@ -27,7 +27,7 @@ public class RescueRequest {
     @JoinColumn(name = "id")
     private MapPoint mapPoint;
 
-    @Column(name = "reporter_id", unique = true)
+    @Column(name = "reporter_id", nullable = true)
     private UUID reporterId;
 
     @Column(name = "reporter_phone", length = 10)
@@ -52,4 +52,19 @@ public class RescueRequest {
     @Enumerated(EnumType.STRING)
     private RequestSource source;
 
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDateTime modifiedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDateTime.now();
+    }
 }

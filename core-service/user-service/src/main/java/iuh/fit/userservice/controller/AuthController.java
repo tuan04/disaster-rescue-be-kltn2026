@@ -35,15 +35,9 @@ public class AuthController {
     private final TokenRedisService tokenRedisService;
     private final OtpRedisService otpRedisService;
 
-    @PostMapping("/register/citizen")
+    @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> registerCitizen(@Valid @RequestBody CitizenRegisterRequest request) {
         User user = authService.registerCitizen(request);
-        return ResponseEntity.ok(ApiResponse.success(user));
-    }
-
-    @PostMapping("/register/rescuer")
-    public ResponseEntity<ApiResponse<?>> registerRescuer(@Valid @RequestBody VolunteerRegisterRequest request) {
-        User user = authService.registerRescuer(request);
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 

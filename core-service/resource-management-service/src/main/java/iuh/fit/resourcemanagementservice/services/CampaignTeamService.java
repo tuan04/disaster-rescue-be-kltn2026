@@ -58,8 +58,7 @@ public class CampaignTeamService {
         CampaignTeam existingTeam = campaignTeamRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.RESOURCE_NOT_FOUND,
-                        "Không tìm thấy đội cứu hộ với ID: " + id
-                ));
+                        "Không tìm thấy đội cứu hộ với ID: " + id));
 
         if (request.totalParticipants() != null) {
             existingTeam.setTotalParticipants(request.totalParticipants());

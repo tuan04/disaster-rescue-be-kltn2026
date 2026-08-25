@@ -5,15 +5,14 @@ import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.userservice.dto.request.*;
 import iuh.fit.userservice.dto.response.UserInfoResponse;
 import iuh.fit.userservice.entity.User;
-import iuh.fit.userservice.entity.VolunteerProfile;
 import iuh.fit.userservice.enums.RoleEnum;
 import iuh.fit.userservice.redis.OtpRedisService;
 import iuh.fit.userservice.repository.UserRepository;
-import iuh.fit.userservice.repository.VolunteerProfileRepository;
 import iuh.fit.userservice.service.AuthService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -25,6 +24,7 @@ public class AuthServiceImpl implements AuthService {
     private final OtpRedisService otpRedisService;
 
     @Override
+    @Transactional
     public User registerCitizen(CitizenRegisterRequest request) {
         validateRegister(request);
 
@@ -45,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public Boolean verifyOtp(OtpVerificationRequest request) {
         boolean isValidOtp = otpRedisService.verifyOtp("opt:" + request.getId(), request.getOtp());
         if (!isValidOtp) {
@@ -58,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserInfoResponse login(LoginRequest request) {
         User user = userRepository.findByPhone(request.getPhoneNumber());
         if (user == null) {
@@ -71,12 +73,13 @@ public class AuthServiceImpl implements AuthService {
         return UserInfoResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
-                .role(user.getRole())
+                .role(user.getEffectiveRole())
                 .phone(user.getPhone())
                 .build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserInfoResponse forgotPasswordRequest(String phone) {
         System.out.println("Forgot password request for phone: " + phone);
         User user = userRepository.findByPhone(phone);
@@ -87,11 +90,13 @@ public class AuthServiceImpl implements AuthService {
         return UserInfoResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
-                .role(user.getRole())
+                .role(user.getEffectiveRole())
+                .phone(user.getPhone())
                 .build();
     }
 
     @Override
+    @Transactional
     public Boolean resetPassword(UUID id, ResetPasswordRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
@@ -105,14 +110,11 @@ public class AuthServiceImpl implements AuthService {
 
     private void validateRegister(CitizenRegisterRequest request) {
         boolean existsByPhone = userRepository.existsByPhone(request.getPhone());
-        // check if phone number already exists in the database
         if (existsByPhone) {
             throw new BusinessException(ErrorCode.CONFLICT, "Phone number already exists");
         }
-        // check if password and confirm password are the same
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Password and confirm password do not match");
         }
     }
-
 }

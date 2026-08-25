@@ -9,14 +9,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
 
-    @PutMapping("/upgrade-rescuer")
+    @PatchMapping("/upgrade-rescuer-request")
     public ResponseEntity<ApiResponse<?>> upgradeToRescuer(@Validated @RequestBody UpgradeRescuerRequest request) {
-       return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuer(request)));
+       return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequest(request)));
+    }
+
+    @PatchMapping("/upgrade-rescuer-accept/{id}")
+    public ResponseEntity<ApiResponse<?>> upgradeToRescuerAccept(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequestAccept(id)));
     }
 }

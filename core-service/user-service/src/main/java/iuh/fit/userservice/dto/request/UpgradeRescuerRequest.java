@@ -1,8 +1,7 @@
 package iuh.fit.userservice.dto.request;
 
-
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @SuperBuilder
 public class UpgradeRescuerRequest {
-    @NotEmpty(message = "Id không được để trống")
+    @NotNull(message = "Id không được để trống")
     private UUID id;
 
     @NotBlank(message = "Số CCCD không được để trống")

@@ -1,5 +1,6 @@
 package iuh.fit.resourcemanagementservice.entity;
 
+import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,6 +31,20 @@ public class CampaignMember {
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team", nullable = false, length = 20)
     private TeamRole roleInTeam;
+
+    @Column(length = 20, nullable = false, unique = true)
+    private String phone;
+
+    @Column(name = "full_name", length = 100, nullable = false)
+    private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private SexEnum sex;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

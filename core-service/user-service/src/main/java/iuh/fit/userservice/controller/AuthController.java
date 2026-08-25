@@ -17,11 +17,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseCookie;
 
 import java.util.UUID;
 
@@ -42,16 +42,16 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<?>> verifyOtp(@Valid @RequestBody OtpVerificationRequest request){
+    public ResponseEntity<ApiResponse<?>> verifyOtp(@Valid @RequestBody OtpVerificationRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.verifyOtp(request)));
     }
 
     @PostMapping("/login")
-    public  ResponseEntity<ApiResponse<?>> login(
+    public ResponseEntity<ApiResponse<?>> login(
             @Valid @RequestBody LoginRequest request,
             @RequestHeader(value = "X-Client-Type", defaultValue = "WEB") String clientType,
             HttpServletResponse response
-    ){
+    ) {
         UserInfoResponse userInfoResponse = authService.login(request);
         String accessToken = jwtUtils.generateAccessToken(userInfoResponse);
         String refreshToken = jwtUtils.generateRefreshToken(userInfoResponse);
@@ -78,30 +78,26 @@ public class AuthController {
     public ResponseEntity<ApiResponse<?>> refreshToken(
             @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
             @RequestHeader(value = "x-refresh-token", required = false) String headerRefreshToken
-    ){
+    ) {
         final String actualRefreshToken = StringUtils.hasText(cookieRefreshToken)
                 ? cookieRefreshToken
                 : headerRefreshToken;
-        System.out.println(actualRefreshToken);
 
-        if(actualRefreshToken == null || actualRefreshToken.trim().isEmpty()){
+        if (actualRefreshToken == null || actualRefreshToken.trim().isEmpty()) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Refresh token is missing");
         }
         boolean isTokenExpired = jwtUtils.isTokenExpired(actualRefreshToken);
         UUID userId = jwtUtils.extractId(actualRefreshToken);
 
-
         if (userId == null) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Invalid token payload: Missing User ID");
         }
 
-        System.out.println("User ID from refresh token: " + userId);
-
-        if(isTokenExpired){
+        if (isTokenExpired) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Refresh token is expired");
         }
 
-        if(!userService.checkUserExist(userId)){
+        if (!userService.checkUserExist(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "User not found");
         }
         UserInfoResponse userInfoResponse = UserInfoResponse.builder()
@@ -123,11 +119,8 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<?>> logout(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String bearerToken,
-
-            // Lấy Refresh Token từ Cookie (Web) hoặc Custom Header (Mobile)
             @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
             @RequestHeader(value = "x-refresh-token", required = false) String headerRefreshToken,
-
             HttpServletResponse response
     ) {
         String accessToken = null;
@@ -135,7 +128,6 @@ public class AuthController {
             accessToken = bearerToken.substring(7);
         }
 
-        // 2. Trích xuất Refresh Token
         final String refreshToken = StringUtils.hasText(cookieRefreshToken)
                 ? cookieRefreshToken
                 : headerRefreshToken;
@@ -146,11 +138,9 @@ public class AuthController {
         UUID userIdFromAccessToken = jwtUtils.extractId(accessToken);
         UUID userIdFromRefreshToken = jwtUtils.extractId(refreshToken);
 
-        tokenRedisService.revokeTokens("accessToken:" + userIdFromAccessToken,accessToken,accessTokenRemainingTime);
-        tokenRedisService.revokeTokens("refreshToken:" + userIdFromRefreshToken ,refreshToken,refreshTokenRemainingTime);
+        tokenRedisService.revokeTokens("accessToken:" + userIdFromAccessToken, accessToken, accessTokenRemainingTime);
+        tokenRedisService.revokeTokens("refreshToken:" + userIdFromRefreshToken, refreshToken, refreshTokenRemainingTime);
 
-
-        // 4. Xóa Cookie ở trình duyệt (cho Web)
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(true)
@@ -160,16 +150,13 @@ public class AuthController {
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
-
-
         return ResponseEntity.ok(ApiResponse.success(null, "Logout successful"));
     }
 
-
     @PostMapping("/forgot-password/send-otp")
-    public ResponseEntity<ApiResponse<?>>  forgotPassword(@Validated @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+    public ResponseEntity<ApiResponse<?>> forgotPassword(@Validated @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
         UserInfoResponse userInfoResponse = authService.forgotPasswordRequest(forgotPasswordRequest.getPhoneNumber());
-        if(userInfoResponse != null){
+        if (userInfoResponse != null) {
             return ResponseEntity.ok(ApiResponse.success(userInfoResponse, "OTP sent successfully"));
         }
         return null;
@@ -178,14 +165,13 @@ public class AuthController {
     @PostMapping("/forgot-password/verify-otp")
     public ResponseEntity<ApiResponse<?>> forgotVerifyOtp(@Validated @RequestBody OtpVerificationRequest otpVerificationRequest) {
         boolean isValidOtp = otpRedisService.verifyOtp("opt:" + otpVerificationRequest.getId(), otpVerificationRequest.getOtp());
-        if(!isValidOtp) {
+        if (!isValidOtp) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid OTP");
         }
-        String resetToken = jwtUtils.generateResetToken( otpVerificationRequest.getPhoneNumber(), otpVerificationRequest.getId());
+        String resetToken = jwtUtils.generateResetToken(otpVerificationRequest.getPhoneNumber(), otpVerificationRequest.getId());
         ResetTokenResponse resetTokenResponse = ResetTokenResponse.builder()
                 .resetToken(resetToken)
                 .build();
-        System.out.println("Reset token generated: " + resetToken);
         return ResponseEntity.ok(ApiResponse.success(resetTokenResponse, "OTP verified successfully"));
     }
 
@@ -194,18 +180,16 @@ public class AuthController {
             @Validated @RequestBody ResetPasswordRequest resetPasswordRequest,
             @RequestHeader(value = "reset-token", required = true) String resetToken
     ) {
-        if(jwtUtils.isTokenExpired(resetToken)) {
+        if (jwtUtils.isTokenExpired(resetToken)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Reset token is expired");
         }
         UUID userId = jwtUtils.extractId(resetToken);
         boolean isReset = authService.resetPassword(userId, resetPasswordRequest);
-        if(isReset) {
+        if (isReset) {
             return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
         }
-
         return null;
     }
-
 
     @GetMapping("/user-info")
     public ResponseEntity<ApiResponse<?>> getUserInfo(
@@ -215,7 +199,7 @@ public class AuthController {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Missing or invalid Authorization header");
         }
         String accessToken = bearerToken.substring(7);
-        if(jwtUtils.isTokenExpired(accessToken)) {
+        if (jwtUtils.isTokenExpired(accessToken)) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Access token is expired");
         }
         UUID userId = jwtUtils.extractId(accessToken);
@@ -227,6 +211,4 @@ public class AuthController {
                 .build();
         return ResponseEntity.ok(ApiResponse.success(userInfoResponse));
     }
-
-
 }

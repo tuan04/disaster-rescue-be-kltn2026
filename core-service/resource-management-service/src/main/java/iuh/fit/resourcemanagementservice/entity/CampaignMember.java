@@ -1,10 +1,12 @@
 package iuh.fit.resourcemanagementservice.entity;
 
 
+import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -25,6 +27,22 @@ public class CampaignMember {
 
     @Column(name = "member_id")
     private UUID memberId;
+
+    @Column(name = "full_name",length = 100, nullable = false)
+    private String fullName;
+
+    @Column(length = 10)
+    private String phone;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private SexEnum sex;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team")

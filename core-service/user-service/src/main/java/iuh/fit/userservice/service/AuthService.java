@@ -9,8 +9,6 @@ import java.util.UUID;
 public interface AuthService {
     public User registerCitizen(CitizenRegisterRequest request);
 
-    public User registerRescuer(VolunteerRegisterRequest request);
-
     public Boolean verifyOtp(OtpVerificationRequest request);
 
     public UserInfoResponse login(LoginRequest request);

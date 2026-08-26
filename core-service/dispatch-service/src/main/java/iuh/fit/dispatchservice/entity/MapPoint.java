@@ -3,7 +3,6 @@ package iuh.fit.dispatchservice.entity;
 import iuh.fit.dispatchservice.enums.PointType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.locationtech.jts.geom.Point;
 
 import java.time.LocalDateTime;
@@ -33,7 +32,22 @@ public class MapPoint {
     @Column(name = "is_visible", columnDefinition = "boolean default true")
     private Boolean isVisible;
 
-    @CreationTimestamp
+    @Column(name = "location_id")
+    private UUID locationId;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "modified_at")
+    private LocalDateTime modifiedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedAt = LocalDateTime.now();
+    }
 }

@@ -50,7 +50,7 @@ spring:
             - id: notification-websocket-route
               uri: lb:ws://NOTIFICATION-SERVICE
               predicates:
-                - Path=/ws/**
+                - Path=/ws, /ws/**
 
 eureka:
   client:

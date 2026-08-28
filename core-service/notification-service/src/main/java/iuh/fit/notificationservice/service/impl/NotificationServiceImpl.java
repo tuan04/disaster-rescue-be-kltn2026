@@ -49,6 +49,8 @@ public class NotificationServiceImpl implements NotificationService {
                 radius
         );
 
+        System.out.println("Found userIds in radius: " + rawUserIds);
+
         if (rawUserIds.isEmpty()) {
             return;
         }

@@ -16,6 +16,7 @@ public class SendPushNotification {
 
     @KafkaListener(topics = "sos-event", groupId = "notification-group")
     public void sendPushNotification(SOSResponse event) {
-            notificationService.processSOSEvent(event);
+        System.out.println("Received SOS event: " + event.toString());
+        notificationService.processSOSEvent(event);
     }
 }

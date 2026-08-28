@@ -34,7 +34,7 @@ public class LocationTrackingService {
     public List<String> findUsersInRadius(double longitude, double latitude, int radiusMeters) {
             // Đảm bảo thứ tự tham số của Point: (Kinh độ - x, Vĩ độ - y)
             Point centerPoint = new Point(longitude, latitude);
-            Distance searchDistance = new Distance(radiusMeters, Metrics.valueOf("METERS"));
+            Distance searchDistance = new Distance(radiusMeters, RedisGeoCommands.DistanceUnit.METERS);
             Circle searchCircle = new Circle(centerPoint, searchDistance);
 
             // Gọi lệnh GEORADIUS / GEOSEARCH của Redis

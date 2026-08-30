@@ -4,7 +4,7 @@ import iuh.fit.userservice.enums.RoleEnum;
 import iuh.fit.userservice.enums.SexEnum;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -21,7 +21,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(length = 10, nullable = false, unique = true)
+    @Column(length = 20, nullable = false, unique = true)
     private String phone;
 
     @Column(name = "full_name", length = 100, nullable = false)
@@ -35,7 +35,7 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(length = 20, nullable = false)
     private RoleEnum role;
 
     @Column(name = "avatar_url")
@@ -43,8 +43,6 @@ public class User {
 
     @Column(name = "birth_date")
     private LocalDate birthDate;
-
-
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
@@ -54,7 +52,6 @@ public class User {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private VolunteerProfile volunteerProfile;
-
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -70,5 +67,19 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         modifiedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Lấy vai trò hiệu lực của người dùng cho JWT và Response.
+     * Nếu role là EMPLOYEE và có VolunteerProfile hợp lệ với currentRoleInTeam, trả về currentRoleInTeam.
+     * Ngược lại trả về CITIZEN.
+     */
+    public String getEffectiveRole() {
+        if (this.role == RoleEnum.EMPLOYEE 
+                && this.volunteerProfile != null 
+                && this.volunteerProfile.getCurrentRoleInTeam() != null) {
+            return this.volunteerProfile.getCurrentRoleInTeam().name();
+        }
+        return RoleEnum.CITIZEN.name();
     }
 }

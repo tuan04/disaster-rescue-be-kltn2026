@@ -29,25 +29,26 @@ public class CampaignMember {
     @Column(name = "member_id", nullable = false)
     private UUID memberId;
 
-    @Column(name = "full_name",length = 100, nullable = false)
-    private String fullName;
-
-    @Column(length = 10)
-    private String phone;
-
-    @Column(name = "avatar_url")
-    private String avatarUrl;
-
     @Column(name = "birth_date")
     private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_in_team", nullable = false, length = 20)
+    private TeamRole roleInTeam;
+
+    @Column(length = 20, nullable = false, unique = true)
+    private String phone;
+
+    @Column(name = "full_name", length = 100, nullable = false)
+    private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private SexEnum sex;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role_in_team", nullable = false, length = 20)
-    private TeamRole roleInTeam;
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

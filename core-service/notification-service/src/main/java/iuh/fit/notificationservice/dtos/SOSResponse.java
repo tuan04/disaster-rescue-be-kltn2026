@@ -1,23 +1,22 @@
 package iuh.fit.notificationservice.dtos;
 
-import lombok.*;
+import iuh.fit.notificationservice.enums.EmergencyLevel;
+import iuh.fit.notificationservice.enums.RequestSource;
+import iuh.fit.notificationservice.enums.RequestStatus;
+import lombok.Builder;
 
 import java.util.UUID;
 
-@Getter
-@Setter
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class SOSResponse {
-    private UUID id;
-    private String reporterPhone;
-    private String emergencyLevel;
-    private String content;
-    private String status;
-    private String source;
-    private double latitude;
-    private double longitude;
-    private Integer radiusMeters;
+public record SOSResponse(
+        UUID id,
+        String reporterPhone,
+        EmergencyLevel emergencyLevel,
+        String content,
+        RequestStatus status,
+        RequestSource source,
+        double latitude,
+        double longitude,
+        Integer radiusMeters
+) {
 }

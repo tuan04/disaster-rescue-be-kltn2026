@@ -1,6 +1,7 @@
-package iuh.fit.notificationservice.services;
+package iuh.fit.resourcemanagementservice.services;
 
-import iuh.fit.notificationservice.dtos.redis.TeamLocationRedis;
+import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
+import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,21 +19,14 @@ public class RedisService {
 
     public void saveLocation(
             UUID campaignTeamId,
-            Double latitude,
-            Double longitude
+            TeamLocation location
     ) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
-
-        TeamLocationRedis location = TeamLocationRedis.builder()
-                .latitude(latitude)
-                .longitude(longitude)
-                .recordedAt(Instant.now())
-                .build();
 
         redisTemplate.opsForValue().set(key, location);
     }
 
-    public TeamLocationRedis getCurrentLocation(UUID campaignTeamId) {
+    public TeamLocationRequest getCurrentLocation(UUID campaignTeamId) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
 
         Object value = redisTemplate.opsForValue().get(key);
@@ -41,7 +35,7 @@ public class RedisService {
             return null;
         }
 
-        return (TeamLocationRedis) value;
+        return (TeamLocationRequest) value;
     }
 
     public void deleteLocation(UUID campaignTeamId) {

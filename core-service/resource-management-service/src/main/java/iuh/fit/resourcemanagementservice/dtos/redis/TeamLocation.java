@@ -1,13 +1,15 @@
-package iuh.fit.notificationservice.dtos.redis;
+package iuh.fit.resourcemanagementservice.dtos.redis;
 
 import lombok.Builder;
 
 import java.time.Instant;
 
 @Builder
-public record TeamLocationRedis(
+public record TeamLocation(
         Double latitude,
         Double longitude,
+        Double speed,
+        Double heading,
         Instant recordedAt
 ) {
 }

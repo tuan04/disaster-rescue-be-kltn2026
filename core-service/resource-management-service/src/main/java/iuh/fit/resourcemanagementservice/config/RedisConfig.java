@@ -1,4 +1,4 @@
-package iuh.fit.notificationservice.config;
+package iuh.fit.resourcemanagementservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

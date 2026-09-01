@@ -1,4 +1,4 @@
-package iuh.fit.notificationservice.repository;
+package iuh.fit.notificationservice.repositories;
 
 import iuh.fit.notificationservice.entity.UserNotification;
 import org.springframework.data.jpa.repository.JpaRepository;

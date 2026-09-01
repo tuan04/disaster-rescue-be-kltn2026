@@ -1,16 +1,15 @@
-package iuh.fit.notificationservice.service.impl;
+package iuh.fit.notificationservice.services.impl;
 
 import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
 import iuh.fit.notificationservice.dtos.SOSResponse;
 import iuh.fit.notificationservice.entity.Notification;
 import iuh.fit.notificationservice.entity.UserNotification;
 import iuh.fit.notificationservice.redis.LocationTrackingService;
-import iuh.fit.notificationservice.repository.NotificationRepository;
-import iuh.fit.notificationservice.repository.UserNotificationRepository;
-import iuh.fit.notificationservice.service.NotificationService;
+import iuh.fit.notificationservice.repositories.NotificationRepository;
+import iuh.fit.notificationservice.repositories.UserNotificationRepository;
+import iuh.fit.notificationservice.services.NotificationService;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

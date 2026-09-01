@@ -1,4 +1,4 @@
-package iuh.fit.notificationservice.service;
+package iuh.fit.notificationservice.services;
 
 import iuh.fit.notificationservice.dtos.SOSResponse;
 

@@ -2,9 +2,11 @@ package iuh.fit.resourcemanagementservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.kafka.dto.TeamLocationUpdatedEvent;
 import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
 import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
+import iuh.fit.resourcemanagementservice.events.producer.LocationEventProducer;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class CampaignTeamService {
 
     private final CampaignTeamRepository campaignTeamRepository;
     private final RedisService redisService;
+    private final LocationEventProducer locationEventProducer;
 
     /**
      * Tạo mới Đội Cứu hộ (Campaign Team)
@@ -116,5 +119,28 @@ public class CampaignTeamService {
                 .build();
 
         redisService.saveLocation(team.getId(), teamLocation);
+
+        locationEventProducer.publishTeamLocationUpdateEvent(new TeamLocationUpdatedEvent(
+                team.getId(),
+                teamLocation.latitude(),
+                teamLocation.longitude(),
+                teamLocation.speed(),
+                teamLocation.heading(),
+                teamLocation.recordedAt()
+        ));
+    }
+
+    /**
+     * Lấy tọa độ vị trí mới nhất của đội cứu hộ từ Redis
+     */
+    public TeamLocation getTeamLocation(UUID teamId) {
+        TeamLocation location = redisService.getCurrentLocation(teamId);
+        if (location == null) {
+            throw new BusinessException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Chưa có thông tin vị trí gần đây của đội cứu hộ: " + teamId
+            );
+        }
+        return location;
     }
 }

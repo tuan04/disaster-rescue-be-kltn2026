@@ -19,14 +19,13 @@ public class RedisService {
 
     public void saveLocation(
             UUID campaignTeamId,
-            TeamLocation location
-    ) {
+            TeamLocation location) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
 
         redisTemplate.opsForValue().set(key, location);
     }
 
-    public TeamLocationRequest getCurrentLocation(UUID campaignTeamId) {
+    public TeamLocation getCurrentLocation(UUID campaignTeamId) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
 
         Object value = redisTemplate.opsForValue().get(key);
@@ -35,7 +34,7 @@ public class RedisService {
             return null;
         }
 
-        return (TeamLocationRequest) value;
+        return (TeamLocation) value;
     }
 
     public void deleteLocation(UUID campaignTeamId) {

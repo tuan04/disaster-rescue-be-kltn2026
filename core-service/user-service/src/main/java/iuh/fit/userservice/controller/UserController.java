@@ -1,8 +1,8 @@
 package iuh.fit.userservice.controller;
 
-
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.response.UserProfileResponse;
 import iuh.fit.userservice.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +17,15 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping({ "/me", "/profile" })
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
+            @RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserProfile(userId)));
+    }
+
     @PatchMapping("/upgrade-rescuer-request")
     public ResponseEntity<ApiResponse<?>> upgradeToRescuer(@Validated @RequestBody UpgradeRescuerRequest request) {
-       return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequest(request)));
+        return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequest(request)));
     }
 
     @PatchMapping("/upgrade-rescuer-accept/{id}")

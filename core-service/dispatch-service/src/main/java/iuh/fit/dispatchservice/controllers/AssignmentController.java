@@ -21,13 +21,18 @@ public class AssignmentController {
     public ResponseEntity<ApiResponse<AssignmentResponse>> acceptRescueByLeader(
             @PathVariable UUID requestId,
             @RequestParam UUID leaderId,
-            @RequestParam String note
-    ) {
+            @RequestParam String note) {
         Assignment assignment = assignmentService.acceptRescueByLeader(
                 requestId,
                 leaderId,
-                note
-        );
+                note);
         return ResponseEntity.ok(ApiResponse.success(AssignmentResponse.fromEntity(assignment)));
+    }
+
+    @GetMapping("/teams/{teamId}/active")
+    public ResponseEntity<ApiResponse<AssignmentResponse>> getActiveMissionByTeam(
+            @PathVariable(value = "teamId") UUID teamId) {
+        AssignmentResponse response = assignmentService.getActiveMissionByTeam(teamId);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

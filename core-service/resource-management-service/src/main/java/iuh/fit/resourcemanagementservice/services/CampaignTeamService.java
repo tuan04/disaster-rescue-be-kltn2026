@@ -2,16 +2,23 @@ package iuh.fit.resourcemanagementservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
-import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamRequest;
-import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
-import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
+import iuh.fit.common.kafka.dto.TeamLocationUpdatedEvent;
+import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
+import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
-import iuh.fit.resourcemanagementservice.enums.TeamStatus;
+import iuh.fit.resourcemanagementservice.events.producer.LocationEventProducer;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
+import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
+import iuh.fit.resourcemanagementservice.enums.TeamStatus;
+
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -21,6 +28,8 @@ import java.util.UUID;
 public class CampaignTeamService {
 
     private final CampaignTeamRepository campaignTeamRepository;
+    private final RedisService redisService;
+    private final LocationEventProducer locationEventProducer;
 
     /**
      * Tạo mới Đội Cứu hộ (Campaign Team)
@@ -89,13 +98,49 @@ public class CampaignTeamService {
     }
 
     /**
-     * Truy vấn thông tin đội cứu hộ theo Leader ID (phục vụ gRPC/nội bộ)
+     * Truy vấn thông tin đội cứu hộ trong chiến dịch hiện tại theo Leader ID (phục vụ gRPC/nội bộ)
      */
-    @Transactional(readOnly = true)
-    public CampaignTeam getTeamByLeaderId(UUID leaderId) {
-        return campaignTeamRepository.findByLeaderId(leaderId)
+    public CampaignTeam getActiveTeamByLeaderId(UUID leaderId) {
+        return campaignTeamRepository.findActiveTeamByLeaderId(leaderId)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Không tìm thấy đội cứu hộ cho Leader ID: " + leaderId));
+    }
+
+    public void saveTeamLocation(UUID leaderId, TeamLocationRequest request) {
+        CampaignTeam team = this.getActiveTeamByLeaderId(leaderId);
+
+        TeamLocation teamLocation = TeamLocation.builder()
+                .latitude(request.latitude())
+                .longitude(request.longitude())
+                .speed(request.speed())
+                .heading(request.heading())
+                .recordedAt(Instant.now())
+                .build();
+
+        redisService.saveLocation(team.getId(), teamLocation);
+
+        locationEventProducer.publishTeamLocationUpdateEvent(new TeamLocationUpdatedEvent(
+                team.getId(),
+                teamLocation.latitude(),
+                teamLocation.longitude(),
+                teamLocation.speed(),
+                teamLocation.heading(),
+                teamLocation.recordedAt()
+        ));
+    }
+
+    /**
+     * Lấy tọa độ vị trí mới nhất của đội cứu hộ từ Redis
+     */
+    public TeamLocation getTeamLocation(UUID teamId) {
+        TeamLocation location = redisService.getCurrentLocation(teamId);
+        if (location == null) {
+            throw new BusinessException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Chưa có thông tin vị trí gần đây của đội cứu hộ: " + teamId
+            );
+        }
+        return location;
     }
 }

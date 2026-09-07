@@ -19,4 +19,6 @@ public class RescueService {
                 .orElseThrow(
                         () -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu cứu hộ"));
     }
+
+
 }

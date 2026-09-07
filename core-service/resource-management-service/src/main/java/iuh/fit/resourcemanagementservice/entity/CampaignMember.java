@@ -5,6 +5,7 @@ import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -27,6 +28,9 @@ public class CampaignMember {
 
     @Column(name = "member_id", nullable = false)
     private UUID memberId;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team", nullable = false, length = 20)

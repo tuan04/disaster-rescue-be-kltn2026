@@ -1,7 +1,7 @@
 package iuh.fit.notificationservice.kafka.consumer;
 
-import iuh.fit.notificationservice.dtos.SOSResponse;
-import iuh.fit.notificationservice.service.NotificationService;
+import iuh.fit.common.kafka.dto.SOSResponse;
+import iuh.fit.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

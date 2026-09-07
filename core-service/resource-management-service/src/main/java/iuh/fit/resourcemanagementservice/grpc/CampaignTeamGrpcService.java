@@ -21,7 +21,7 @@ public class CampaignTeamGrpcService extends ResourceTeamGrpcServiceGrpc.Resourc
     public void getTeamByLeaderId(GetTeamByLeaderRequest request, StreamObserver<TeamInfoResponse> responseObserver) {
         UUID leaderId = UUID.fromString(request.getLeaderId());
 
-        CampaignTeam team = campaignTeamService.getTeamByLeaderId(leaderId);
+        CampaignTeam team = campaignTeamService.getActiveTeamByLeaderId(leaderId);
 
         TeamInfoResponse response = TeamInfoResponse.newBuilder()
                 .setCampaignTeamId(team.getId().toString())

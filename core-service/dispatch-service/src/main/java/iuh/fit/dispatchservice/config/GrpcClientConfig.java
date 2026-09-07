@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.grpc.client.ImportGrpcClients;
 
 @Configuration
-@ImportGrpcClients(target = "resource-management-service", types = ResourceTeamGrpcServiceGrpc.ResourceTeamGrpcServiceBlockingStub.class)
+@ImportGrpcClients(
+        target = "resource-management-service",
+        types = ResourceTeamGrpcServiceGrpc.ResourceTeamGrpcServiceBlockingStub.class
+)
 public class GrpcClientConfig {
 }

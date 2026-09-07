@@ -2,17 +2,22 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.grpc.TeamInfoResponse;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
+import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
 import iuh.fit.dispatchservice.enums.RequestStatus;
 import iuh.fit.dispatchservice.repositories.AssignmentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssignmentService {
@@ -47,4 +52,14 @@ public class AssignmentService {
         return createAssignment(requestId, leaderId, notes, AssignmentStatus.ACCEPTED);
     }
 
+    public AssignmentResponse getActiveMissionByTeam(UUID teamId) {
+        if (teamId == null) {
+            return null;
+        }
+
+        return assignmentRepository
+                .findByCampaignTeamIdAndStatus(teamId, AssignmentStatus.ACCEPTED)
+                .map(AssignmentResponse::fromEntity)
+                .orElse(null);
+    }
 }

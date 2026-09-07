@@ -33,7 +33,10 @@ spring:
       properties:
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-        spring.json.trusted.packages: "*"
+#        spring.json.use.type.headers: true
+        spring.json.trusted.packages: "iuh.fit.common.kafka.dto"
+#        spring.json.type.mapping: >
+#          sos_event:iuh.fit.notificationservice.dtos.RescueDetailResponse
 
 eureka:
   client:

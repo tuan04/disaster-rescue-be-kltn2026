@@ -3,7 +3,9 @@ package iuh.fit.userservice.service.impl;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.response.UserProfileResponse;
 import iuh.fit.userservice.entity.User;
+
 import iuh.fit.userservice.entity.VolunteerProfile;
 import iuh.fit.userservice.enums.RoleEnum;
 import iuh.fit.userservice.enums.VerifiedStatusEnum;
@@ -30,11 +32,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public boolean upgradeToRescuerRequest(UpgradeRescuerRequest request) {
-        User user = userRepository.findById(request.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        User user = findUserById(request.getId());
 
-        if (user.getRole() == RoleEnum.EMPLOYEE 
-                && user.getVolunteerProfile() != null 
+        if (user.getRole() == RoleEnum.EMPLOYEE
+                && user.getVolunteerProfile() != null
                 && user.getVolunteerProfile().getVerifiedStatus() == VerifiedStatusEnum.VERIFIED) {
             throw new BusinessException(ErrorCode.CONFLICT, "User is already an employee");
         }
@@ -59,8 +60,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public boolean upgradeToRescuerRequestAccept(UUID id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        User user = findUserById(id);
         if (user.getVolunteerProfile() == null) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Volunteer profile not found");
         }
@@ -68,5 +68,17 @@ public class UserServiceImpl implements UserService {
         user.getVolunteerProfile().setVerifiedStatus(VerifiedStatusEnum.VERIFIED);
         userRepository.save(user);
         return true;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfile(UUID userId) {
+        User user = findUserById(userId);
+        return UserProfileResponse.fromEntity(user);
+    }
+
+    private User findUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
     }
 }

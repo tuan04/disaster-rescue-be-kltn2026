@@ -2,9 +2,10 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.kafka.dto.AIEvaluationNotificationResponse;
+import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.dispatchservice.dtos.request.SOSRequest;
 import iuh.fit.dispatchservice.dtos.request.UpdateSOSRequest;
-import iuh.fit.dispatchservice.dtos.response.SOSResponse;
 import iuh.fit.dispatchservice.entity.Location;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.entity.RescueRequest;
@@ -16,6 +17,7 @@ import iuh.fit.dispatchservice.kafka.producer.SosEventProducer;
 import iuh.fit.dispatchservice.repositories.LocationRepository;
 import iuh.fit.dispatchservice.repositories.MapPointRepository;
 import iuh.fit.dispatchservice.repositories.RescueRequestRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -74,10 +76,10 @@ public class SOSService {
         SOSResponse req = SOSResponse.builder()
                 .id(savedRescueRequest.getId())
                 .reporterPhone(savedRescueRequest.getReporterPhone())
-                .emergencyLevel(savedRescueRequest.getEmergencyLevel())
+                .emergencyLevel(savedRescueRequest.getEmergencyLevel() != null ? savedRescueRequest.getEmergencyLevel().name() : null)
                 .content(savedRescueRequest.getContent())
-                .status(savedRescueRequest.getStatus())
-                .source(savedRescueRequest.getSource())
+                .status(savedRescueRequest.getStatus() != null ? savedRescueRequest.getStatus().name() : null)
+                .source(savedRescueRequest.getSource() != null ? savedRescueRequest.getSource().name() : null)
                 .latitude(sosRequest.getLatitude())
                 .longitude(sosRequest.getLongitude())
                 .radiusMeters(radiusMeters)
@@ -108,10 +110,10 @@ public class SOSService {
         SOSResponse response = SOSResponse.builder()
                 .id(updatedRescueRequest.getId())
                 .reporterPhone(updatedRescueRequest.getReporterPhone())
-                .emergencyLevel(updatedRescueRequest.getEmergencyLevel())
+                .emergencyLevel(updatedRescueRequest.getEmergencyLevel() != null ? updatedRescueRequest.getEmergencyLevel().name() : null)
                 .content(updatedRescueRequest.getContent())
-                .status(updatedRescueRequest.getStatus())
-                .source(updatedRescueRequest.getSource())
+                .status(updatedRescueRequest.getStatus() != null ? updatedRescueRequest.getStatus().name() : null)
+                .source(updatedRescueRequest.getSource() != null ? updatedRescueRequest.getSource().name() : null)
                 .latitude(updatedRescueRequest.getMapPoint().getLocation().getY())
                 .longitude(updatedRescueRequest.getMapPoint().getLocation().getX())
                 .radiusMeters(radiusMeters)
@@ -119,5 +121,19 @@ public class SOSService {
 
         sosEventProducer.publishSOSEvent(response);
         return response;
+    }
+
+    @Transactional
+    public boolean updateSOSByAI(AIEvaluationNotificationResponse event){
+
+        RescueRequest existingRequest = rescueRequestRepository.findById(event.requestId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu cứu hộ"));
+
+        existingRequest.setAiEvaluation(event.evaluate());
+        existingRequest.setEmergencyLevel(EmergencyLevel.valueOf(event.emergencyLevel()));
+        existingRequest.getMapPoint().setAddress(event.address());
+
+        rescueRequestRepository.save(existingRequest);
+        return true;
     }
 }

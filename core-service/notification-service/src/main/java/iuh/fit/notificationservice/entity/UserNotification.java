@@ -30,6 +30,10 @@ public class UserNotification {
     @Builder.Default
     private Boolean isRead = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -39,6 +43,8 @@ public class UserNotification {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isRead == null) isRead = false;
+        if (isDeleted == null) isDeleted = false;
     }
 
     @PreUpdate

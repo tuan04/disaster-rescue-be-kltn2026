@@ -58,6 +58,9 @@ public class RescueRequest {
     @Column(name = "modified_at")
     private LocalDateTime modifiedAt;
 
+    @Column(name = "ai_evaluation", columnDefinition = "TEXT")
+    private String aiEvaluation;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

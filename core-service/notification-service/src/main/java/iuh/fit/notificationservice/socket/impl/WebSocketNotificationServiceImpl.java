@@ -18,6 +18,7 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
 
     @Override
     public void sendToUser(UUID userId, NotificationSocketMessage message) {
+        System.out.println("Sending notification to userId: " + userId + ", message: " + message);
         if (userId == null || message == null) {
             return;
         }
@@ -45,6 +46,8 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
         if (userIds == null || userIds.isEmpty() || message == null) {
             return;
         }
+
+
 
         for (UUID userId : userIds) {
             sendToUser(userId, message);

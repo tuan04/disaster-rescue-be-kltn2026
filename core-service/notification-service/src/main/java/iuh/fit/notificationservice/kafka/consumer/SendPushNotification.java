@@ -1,6 +1,6 @@
 package iuh.fit.notificationservice.kafka.consumer;
 
-import iuh.fit.notificationservice.dtos.SOSResponse;
+import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +16,7 @@ public class SendPushNotification {
 
     @KafkaListener(topics = "sos-event", groupId = "notification-group")
     public void sendPushNotification(SOSResponse event) {
-            notificationService.processSOSEvent(event);
+        System.out.println("Received SOS event: " + event.toString());
+        notificationService.processSOSEvent(event);
     }
 }

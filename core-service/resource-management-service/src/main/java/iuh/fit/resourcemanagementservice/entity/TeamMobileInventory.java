@@ -43,6 +43,9 @@ public class TeamMobileInventory {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
     }
 
     @PreUpdate

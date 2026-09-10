@@ -117,7 +117,7 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 
 ---
 
-### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`, `/api/v1/campaign-warehouse-inventories`, `/api/v1/items`)
+### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`, `/api/v1/campaign-warehouse-inventories`, `/api/v1/items`, `/api/v1/team-mobile-inventories`)
 
 | Phương thức | Endpoint | Header / Auth | Mô tả chức năng | Request Body / Params |
 |:---|:---|:---|:---|:---|
@@ -136,6 +136,11 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 | `PATCH` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin vật phẩm (hỗ trợ JSON hoặc multipart) | Path: `id`<br>JSON: `UpdateItemRequest`<br>hoặc FormData: `name`, `unit`, `imageUrl`, `image` |
 | `DELETE` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Xóa mềm vật phẩm (đặt `isDeleted = true`) | Path: `id` |
 | `GET` | `/api/v1/items/{id}` | Public / Authenticated | Xem chi tiết một vật phẩm theo ID | Path: `id` |
+| `POST` | `/api/v1/team-mobile-inventories` | `Authorization` (Leader/Manager/Admin) | Thêm vật phẩm vào kho lưu động của đội | `CreateTeamMobileInventoryRequest` (campaignTeamId, itemId, currentQuantity) |
+| `PATCH` | `/api/v1/team-mobile-inventories/{id}` | `Authorization` (Leader/Manager/Admin) | Cập nhật số lượng / trạng thái tồn kho lưu động | Path: `id`<br>`UpdateTeamMobileInventoryRequest` (currentQuantity, isDeleted) |
+| `DELETE` | `/api/v1/team-mobile-inventories/{id}` | `Authorization` (Leader/Manager/Admin) | Xóa mềm vật phẩm khỏi kho lưu động (đặt `isDeleted = true`) | Path: `id` |
+| `GET` | `/api/v1/team-mobile-inventories/{id}` | Public / Authenticated | Xem chi tiết tồn kho lưu động theo ID | Path: `id` |
+| `GET` | `/api/v1/team-mobile-inventories/team/{teamId}` | Public / Authenticated | Lấy danh sách tồn kho lưu động của đội theo teamId | Path: `teamId` |
 
 ---
 

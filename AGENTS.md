@@ -117,7 +117,7 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 
 ---
 
-### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`)
+### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`, `/api/v1/campaign-warehouse-inventories`, `/api/v1/items`)
 
 | Phương thức | Endpoint | Header / Auth | Mô tả chức năng | Request Body / Params |
 |:---|:---|:---|:---|:---|
@@ -127,6 +127,15 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 | `PATCH` | `/api/v1/campaign-teams/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin đội cứu hộ (phương tiện, trạng thái, sđt) | Path: `id`<br>`UpdateTeamRequest` (totalParticipants, status, vehicles, teamName, leaderId, leaderPhone) |
 | `POST` | `/api/v1/teams/{teamId}/members` | `Authorization` (Manager/Leader) | Thêm thành viên vào đội cứu hộ theo vai trò | Path: `teamId`<br>`AddMemberRequest` (memberId, roleInTeam) |
 | `DELETE` | `/api/v1/teams/{teamId}/members/{memberId}` | `Authorization` (Manager/Leader) | Xóa thành viên khỏi đội cứu hộ | Path: `teamId`, `memberId` |
+| `POST` | `/api/v1/campaign-warehouse-inventories` | `Authorization` (Manager/Admin) | Thêm vật phẩm vào kho của chiến dịch | `CreateCampaignWarehouseInventoryRequest` (campaignId, warehouseId, itemId, quantity) |
+| `PATCH` | `/api/v1/campaign-warehouse-inventories/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin tồn kho (số lượng, kho) | Path: `id`<br>`UpdateCampaignWarehouseInventoryRequest` (quantity, warehouseId) |
+| `DELETE` | `/api/v1/campaign-warehouse-inventories/{id}` | `Authorization` (Manager/Admin) | Xóa mềm tồn kho chiến dịch (đặt `isDeleted = true`) | Path: `id` |
+| `GET` | `/api/v1/campaign-warehouse-inventories/{id}` | Public / Authenticated | Xem chi tiết tồn kho theo ID | Path: `id` |
+| `GET` | `/api/v1/campaign-warehouse-inventories` | Public / Authenticated | Lấy danh sách tồn kho (lọc theo campaignId, warehouseId) | Query Params: `campaignId`, `warehouseId` |
+| `POST` | `/api/v1/items` | `Authorization` (Manager/Admin) | Thêm mới vật phẩm (hỗ trợ JSON hoặc multipart/form-data upload ảnh lên S3) | JSON: `CreateItemRequest`<br>hoặc FormData: `name`, `unit`, `imageUrl`, `image` |
+| `PATCH` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin vật phẩm (hỗ trợ JSON hoặc multipart) | Path: `id`<br>JSON: `UpdateItemRequest`<br>hoặc FormData: `name`, `unit`, `imageUrl`, `image` |
+| `DELETE` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Xóa mềm vật phẩm (đặt `isDeleted = true`) | Path: `id` |
+| `GET` | `/api/v1/items/{id}` | Public / Authenticated | Xem chi tiết một vật phẩm theo ID | Path: `id` |
 
 ---
 

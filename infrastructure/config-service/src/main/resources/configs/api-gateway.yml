@@ -38,7 +38,7 @@ spring:
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:
-                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/teams/**
+                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/teams/**, /api/v1/campaign-warehouse-inventories/**, /api/v1/items/**
             - id: integration-service
               uri: lb://INTEGRATION-SERVICE
               predicates:

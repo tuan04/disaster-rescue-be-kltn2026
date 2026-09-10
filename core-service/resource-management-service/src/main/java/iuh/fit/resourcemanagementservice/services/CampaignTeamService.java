@@ -23,6 +23,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CampaignTeamService {
@@ -30,6 +33,12 @@ public class CampaignTeamService {
     private final CampaignTeamRepository campaignTeamRepository;
     private final RedisService redisService;
     private final LocationEventProducer locationEventProducer;
+
+    public CampaignTeam findById(UUID campaignTeamID) {
+        return campaignTeamRepository.findById(campaignTeamID).orElseThrow(() -> new BusinessException(
+                ErrorCode.RESOURCE_NOT_FOUND,
+                "Không tìm thấy đội cứu hộ cho với ID: " + campaignTeamID));
+    }
 
     /**
      * Tạo mới Đội Cứu hộ (Campaign Team)
@@ -98,7 +107,8 @@ public class CampaignTeamService {
     }
 
     /**
-     * Truy vấn thông tin đội cứu hộ trong chiến dịch hiện tại theo Leader ID (phục vụ gRPC/nội bộ)
+     * Truy vấn thông tin đội cứu hộ trong chiến dịch hiện tại theo Leader ID (phục
+     * vụ gRPC/nội bộ)
      */
     public CampaignTeam getActiveTeamByLeaderId(UUID leaderId) {
         return campaignTeamRepository.findActiveTeamByLeaderId(leaderId)
@@ -126,8 +136,7 @@ public class CampaignTeamService {
                 teamLocation.longitude(),
                 teamLocation.speed(),
                 teamLocation.heading(),
-                teamLocation.recordedAt()
-        ));
+                teamLocation.recordedAt()));
     }
 
     /**
@@ -138,9 +147,24 @@ public class CampaignTeamService {
         if (location == null) {
             throw new BusinessException(
                     ErrorCode.RESOURCE_NOT_FOUND,
-                    "Chưa có thông tin vị trí gần đây của đội cứu hộ: " + teamId
-            );
+                    "Chưa có thông tin vị trí gần đây của đội cứu hộ: " + teamId);
         }
         return location;
+    }
+
+    /**
+     * Xử lý sự kiện hoàn thành ca cứu hộ từ Kafka: Chuyển trạng thái đội sang READY
+     */
+    @Transactional
+    public void handleRescueCompleted(UUID campaignTeamId) {
+        if (campaignTeamId == null) {
+            return;
+        }
+
+        CampaignTeam team = findById(campaignTeamId);
+        if (team.getStatus() == TeamStatus.READY) {
+            return;
+        }
+        team.setStatus(TeamStatus.READY);
     }
 }

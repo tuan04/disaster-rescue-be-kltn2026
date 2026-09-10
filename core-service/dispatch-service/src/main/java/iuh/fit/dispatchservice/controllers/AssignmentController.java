@@ -35,4 +35,12 @@ public class AssignmentController {
         AssignmentResponse response = assignmentService.getActiveMissionByTeam(teamId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/{assignmentId}/complete")
+    public ResponseEntity<Void> complete(
+            @PathVariable UUID assignmentId,
+            @RequestHeader(value = "X-User-Id") UUID leaderId) {
+        assignmentService.complete(assignmentId, leaderId);
+        return ResponseEntity.noContent().build();
+    }
 }

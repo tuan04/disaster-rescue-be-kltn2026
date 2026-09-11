@@ -36,6 +36,17 @@ spring:
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         spring.json.trusted.packages: "iuh.fit.common.kafka.dto"
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+aws:
+  s3:
+    bucket-name: ${BUCKET_NAME}
+    region: ${REGION}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
 
 eureka:
   client:

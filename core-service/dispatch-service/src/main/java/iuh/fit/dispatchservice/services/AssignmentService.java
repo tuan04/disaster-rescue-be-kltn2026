@@ -11,7 +11,6 @@ import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
 import iuh.fit.dispatchservice.enums.RequestStatus;
 import iuh.fit.dispatchservice.repositories.AssignmentRepository;
-import iuh.fit.dispatchservice.repositories.RescueRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

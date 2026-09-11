@@ -31,10 +31,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
-#      properties:
-#        spring.json.add.type.headers: true
-#        spring.json.type.mapping: >
-#          sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
+    #      properties:
+    #        spring.json.add.type.headers: true
+    #        spring.json.type.mapping: >
+    #          sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
     consumer:
       group-id: dispatch-group
       auto-offset-reset: earliest

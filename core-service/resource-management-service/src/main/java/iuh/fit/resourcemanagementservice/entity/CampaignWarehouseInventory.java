@@ -32,6 +32,16 @@ public class CampaignWarehouseInventory {
 
     private Integer quantity;
 
+    @Column(name = "manager_name")
+    private String managerPhone;
+
+    @Builder.Default
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+
+
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -41,6 +51,9 @@ public class CampaignWarehouseInventory {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
     }
 
     @PreUpdate

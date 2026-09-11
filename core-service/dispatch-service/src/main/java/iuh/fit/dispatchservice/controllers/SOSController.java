@@ -1,10 +1,10 @@
 package iuh.fit.dispatchservice.controllers;
 
 
+import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.dispatchservice.dtos.request.SOSRequest;
 import iuh.fit.dispatchservice.dtos.request.UpdateSOSRequest;
-import iuh.fit.dispatchservice.dtos.response.SOSResponse;
 import iuh.fit.dispatchservice.services.SOSService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +24,6 @@ public class SOSController {
             @Validated @RequestBody SOSRequest sosRequest,
             @RequestHeader(value = "X-User-Id", required = false) UUID userId
     ){
-        System.out.println("Received userId: " + userId);
         SOSResponse sosResponse = sosService.createSOSRequest(sosRequest, userId);
         return ResponseEntity.ok(ApiResponse.success(sosResponse));
     }

@@ -1,7 +1,11 @@
 package iuh.fit.notificationservice.services.impl;
 
+import iuh.fit.common.exception.BusinessException;
+import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.kafka.dto.SOSResponse;
+import iuh.fit.notificationservice.dtos.NotificationResponse;
 import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
-import iuh.fit.notificationservice.dtos.SOSResponse;
+import iuh.fit.notificationservice.dtos.PageResponse;
 import iuh.fit.notificationservice.entity.Notification;
 import iuh.fit.notificationservice.entity.UserNotification;
 import iuh.fit.notificationservice.redis.LocationTrackingService;
@@ -10,6 +14,9 @@ import iuh.fit.notificationservice.repositories.UserNotificationRepository;
 import iuh.fit.notificationservice.services.NotificationService;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +55,8 @@ public class NotificationServiceImpl implements NotificationService {
                 radius
         );
 
+        System.out.println("Found userIds in radius: " + rawUserIds);
+
         if (rawUserIds.isEmpty()) {
             return;
         }
@@ -83,6 +92,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .userId(userId)
                         .notification(savedNotification)
                         .isRead(false)
+                        .isDeleted(false)
                         .build())
                 .toList();
 
@@ -99,10 +109,94 @@ public class NotificationServiceImpl implements NotificationService {
                 .createdAt(savedNotification.getCreatedAt())
                 .latitude(event.latitude())
                 .longitude(event.longitude())
-                .emergencyLevel(event.emergencyLevel() != null ? event.emergencyLevel().name() : "HIGH")
+                .emergencyLevel(event.emergencyLevel() != null ? event.emergencyLevel() : "HIGH")
                 .reporterPhone(event.reporterPhone())
                 .build();
 
         webSocketNotificationService.sendToUsers(validUserIds, socketMessage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<NotificationResponse> getNotificationsByUserId(UUID userId, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+        Page<UserNotification> userNotificationPage = userNotificationRepository
+                .findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId, pageable);
+
+        List<NotificationResponse> content = userNotificationPage.getContent().stream()
+                .map(un -> NotificationResponse.builder()
+                        .id(un.getId())
+                        .notificationId(un.getNotification().getId())
+                        .referenceId(un.getNotification().getReferenceId())
+                        .type(un.getNotification().getType())
+                        .title(un.getNotification().getTitle())
+                        .content(un.getNotification().getContent())
+                        .isRead(un.getIsRead())
+                        .createdAt(un.getCreatedAt())
+                        .build())
+                .toList();
+
+        return PageResponse.<NotificationResponse>builder()
+                .content(content)
+                .page(userNotificationPage.getNumber())
+                .size(userNotificationPage.getSize())
+                .totalElements(userNotificationPage.getTotalElements())
+                .totalPages(userNotificationPage.getTotalPages())
+                .isLast(userNotificationPage.isLast())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NotificationResponse> getNotificationsByUserId(UUID userId) {
+        List<UserNotification> userNotifications = userNotificationRepository
+                .findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(userId);
+
+        return userNotifications.stream()
+                .map(un -> NotificationResponse.builder()
+                        .id(un.getId())
+                        .notificationId(un.getNotification().getId())
+                        .referenceId(un.getNotification().getReferenceId())
+                        .type(un.getNotification().getType())
+                        .title(un.getNotification().getTitle())
+                        .content(un.getNotification().getContent())
+                        .isRead(un.getIsRead())
+                        .createdAt(un.getCreatedAt())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void markAsRead(UUID userNotificationId, UUID userId) {
+        UserNotification userNotification = userNotificationRepository
+                .findByIdAndUserIdAndIsDeletedFalse(userNotificationId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
+
+        userNotification.setIsRead(true);
+        userNotificationRepository.save(userNotification);
+    }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(UUID userId) {
+        userNotificationRepository.markAllAsReadByUserId(userId);
+    }
+
+    @Override
+    @Transactional
+    public void markAsDeleted(UUID userNotificationId, UUID userId) {
+        UserNotification userNotification = userNotificationRepository
+                .findByIdAndUserIdAndIsDeletedFalse(userNotificationId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông báo"));
+
+        userNotification.setIsDeleted(true);
+        userNotificationRepository.save(userNotification);
+    }
+
+    @Override
+    @Transactional
+    public void markAllAsDeleted(UUID userId) {
+        userNotificationRepository.markAllAsDeletedByUserId(userId);
     }
 }

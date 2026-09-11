@@ -1,11 +1,9 @@
 package iuh.fit.notificationservice.redis;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResults;
-import org.springframework.data.geo.Metrics;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -34,7 +32,7 @@ public class LocationTrackingService {
     public List<String> findUsersInRadius(double longitude, double latitude, int radiusMeters) {
             // Đảm bảo thứ tự tham số của Point: (Kinh độ - x, Vĩ độ - y)
             Point centerPoint = new Point(longitude, latitude);
-            Distance searchDistance = new Distance(radiusMeters, Metrics.valueOf("METERS"));
+            Distance searchDistance = new Distance(radiusMeters, RedisGeoCommands.DistanceUnit.METERS);
             Circle searchCircle = new Circle(centerPoint, searchDistance);
 
             // Gọi lệnh GEORADIUS / GEOSEARCH của Redis

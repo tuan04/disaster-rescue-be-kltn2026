@@ -30,6 +30,10 @@ public class TeamMobileInventory {
     @Column(name = "current_quantity")
     private Integer currentQuantity;
 
+    @Builder.Default
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -39,6 +43,9 @@ public class TeamMobileInventory {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
     }
 
     @PreUpdate

@@ -3,7 +3,6 @@ package iuh.fit.notificationservice.socket.impl;
 import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +17,7 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
 
     @Override
     public void sendToUser(UUID userId, NotificationSocketMessage message) {
+        System.out.println("Sending notification to userId: " + userId + ", message: " + message);
         if (userId == null || message == null) {
             return;
         }
@@ -45,6 +45,8 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
         if (userIds == null || userIds.isEmpty() || message == null) {
             return;
         }
+
+
 
         for (UUID userId : userIds) {
             sendToUser(userId, message);

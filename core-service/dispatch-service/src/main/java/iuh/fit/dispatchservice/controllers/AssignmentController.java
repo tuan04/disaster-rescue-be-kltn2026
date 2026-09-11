@@ -1,9 +1,11 @@
 package iuh.fit.dispatchservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.dispatchservice.dtos.request.CancelAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.services.AssignmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +25,9 @@ public class AssignmentController {
             @RequestParam UUID leaderId,
             @RequestParam String note) {
         Assignment assignment = assignmentService.acceptRescueByLeader(
-                requestId,
-                leaderId,
-                note);
+            requestId,
+            leaderId,
+            note);
         return ResponseEntity.ok(ApiResponse.success(AssignmentResponse.fromEntity(assignment)));
     }
 
@@ -41,6 +43,15 @@ public class AssignmentController {
             @PathVariable UUID assignmentId,
             @RequestHeader(value = "X-User-Id") UUID leaderId) {
         assignmentService.complete(assignmentId, leaderId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{assignmentId}/cancel")
+    public ResponseEntity<Void> cancel(
+            @PathVariable UUID assignmentId,
+            @RequestHeader(value = "X-User-Id") UUID leaderId,
+            @Valid @RequestBody CancelAssignmentRequest request) {
+        assignmentService.cancel(assignmentId, leaderId, request.reason());
         return ResponseEntity.noContent().build();
     }
 }

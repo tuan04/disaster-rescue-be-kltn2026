@@ -6,6 +6,7 @@ option java_multiple_files = true;
 
 service ResourceTeamGrpcService {
     rpc GetTeamByLeaderId (GetTeamByLeaderRequest) returns (TeamInfoResponse);
+    rpc IsLeaderOfTeam (IsLeaderOfTeamRequest) returns (IsLeaderOfTeamResponse);
 }
 
 message GetTeamByLeaderRequest {
@@ -16,4 +17,13 @@ message TeamInfoResponse {
     string campaign_team_id = 1;
     string team_name = 2;
     string leader_phone = 3;
+}
+
+message IsLeaderOfTeamRequest {
+    string leader_id = 1;
+    string team_id = 2;
+}
+
+message IsLeaderOfTeamResponse {
+    bool is_leader = 1;
 }

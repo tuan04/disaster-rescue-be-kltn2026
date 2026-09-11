@@ -153,18 +153,27 @@ public class CampaignTeamService {
     }
 
     /**
-     * Xử lý sự kiện hoàn thành ca cứu hộ từ Kafka: Chuyển trạng thái đội sang READY
+     * Chuyển trạng thái đội sang READY
      */
     @Transactional
-    public void handleRescueCompleted(UUID campaignTeamId) {
+    public void setTeamReady(UUID campaignTeamId) {
         if (campaignTeamId == null) {
             return;
         }
 
         CampaignTeam team = findById(campaignTeamId);
+
         if (team.getStatus() == TeamStatus.READY) {
             return;
         }
+
         team.setStatus(TeamStatus.READY);
+    }
+
+    public boolean isLeaderOfTeam(UUID leaderId, UUID teamId) {
+        if (leaderId == null || teamId == null) {
+            return false;
+        }
+        return campaignTeamRepository.existsByIdAndLeaderId(teamId, leaderId);
     }
 }

@@ -20,4 +20,6 @@ public interface CampaignTeamRepository extends JpaRepository<CampaignTeam, UUID
     Optional<CampaignTeam> findActiveTeamByLeaderId(
             UUID leaderId
     );
+
+    boolean existsByIdAndLeaderId(UUID id, UUID leaderId);
 }

@@ -18,9 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+
+import iuh.fit.common.kafka.dto.RescueCanceledEvent;
+import iuh.fit.dispatchservice.kafka.producer.RescueEventProducer;
 
 @Slf4j
 @Service
@@ -30,8 +31,7 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final RescueService rescueService;
     private final ResourceTeamGrpcClient resourceTeamGrpcClient;
-    private final RescueRequestRepository rescueRequestRepository;
-    private final iuh.fit.dispatchservice.kafka.producer.RescueCompletedProducer rescueCompletedProducer;
+    private final RescueEventProducer rescueEventProducer;
 
     private Assignment findById(UUID assignmentId) {
         return assignmentRepository.findById(assignmentId)
@@ -65,6 +65,21 @@ public class AssignmentService {
         return createAssignment(requestId, leaderId, notes, AssignmentStatus.ACCEPTED);
     }
 
+    private void validateLeaderOwnsAssignment(Assignment assignment, UUID leaderId) {
+        boolean isLeader;
+        try {
+            isLeader = resourceTeamGrpcClient.isLeaderOfTeam(leaderId, assignment.getCampaignTeamId());
+        } catch (Exception e) {
+            log.error("Lỗi xác thực quyền đội trưởng của leaderId {}: {}", leaderId, e.getMessage());
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "Không thể xác thực thông tin đội cứu hộ");
+        }
+
+        if (!isLeader) {
+            throw new BusinessException(ErrorCode.FORBIDDEN,
+                    "Bạn không phải là trưởng đội của đội cứu hộ được phân công nhiệm vụ này");
+        }
+    }
+
     @Transactional
     public void complete(UUID assignmentId, UUID leaderId) {
         Assignment assignment = findById(assignmentId);
@@ -75,18 +90,7 @@ public class AssignmentService {
                     "Chỉ có thể hoàn thành nhiệm vụ đang ở trạng thái ACCEPTED");
         }
 
-        TeamInfoResponse teamInfo;
-        try {
-            teamInfo = resourceTeamGrpcClient.getTeamByLeaderId(leaderId);
-        } catch (Exception e) {
-            log.error("Lỗi xác team của leaderId {}: {}", leaderId, e.getMessage());
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "Không thể xác thực thông tin đội cứu hộ");
-        }
-
-        if (teamInfo == null || !assignment.getCampaignTeamId().equals(UUID.fromString(teamInfo.getCampaignTeamId()))) {
-            throw new BusinessException(ErrorCode.FORBIDDEN,
-                    "Bạn không phải là trưởng đội của đội cứu hộ được phân công nhiệm vụ này");
-        }
+        validateLeaderOwnsAssignment(assignment, leaderId);
 
         assignment.setStatus(AssignmentStatus.COMPLETED);
         LocalDateTime now = LocalDateTime.now();
@@ -101,7 +105,34 @@ public class AssignmentService {
                 rescueRequest.getId(),
                 assignment.getCampaignTeamId(),
                 java.time.Instant.now());
-        rescueCompletedProducer.publishRescueCompletedEvent(event);
+        rescueEventProducer.publishRescueCompletedEvent(event);
+    }
+
+    @Transactional
+    public void cancel(UUID assignmentId, UUID leaderId, String reason) {
+        Assignment assignment = findById(assignmentId);
+
+        if (assignment.getStatus() != AssignmentStatus.ACCEPTED) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Chỉ có thể hủy nhiệm vụ đang ở trạng thái ACCEPTED");
+        }
+
+        validateLeaderOwnsAssignment(assignment, leaderId);
+
+        assignment.setStatus(AssignmentStatus.CANCELED);
+        assignment.setNotes(reason.trim());
+
+        RescueRequest rescueRequest = assignment.getRescueRequest();
+        rescueRequest.setStatus(RequestStatus.PENDING);
+
+        RescueCanceledEvent event = new RescueCanceledEvent(
+                assignment.getId(),
+                rescueRequest.getId(),
+                assignment.getCampaignTeamId(),
+                reason.trim(),
+                java.time.Instant.now());
+        rescueEventProducer.publishRescueCanceledEvent(event);
     }
 
     public AssignmentResponse getActiveMissionByTeam(UUID teamId) {

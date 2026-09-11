@@ -2,6 +2,8 @@ package iuh.fit.resourcemanagementservice.grpc;
 
 import io.grpc.stub.StreamObserver;
 import iuh.fit.common.grpc.GetTeamByLeaderRequest;
+import iuh.fit.common.grpc.IsLeaderOfTeamRequest;
+import iuh.fit.common.grpc.IsLeaderOfTeamResponse;
 import iuh.fit.common.grpc.ResourceTeamGrpcServiceGrpc;
 import iuh.fit.common.grpc.TeamInfoResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
@@ -27,6 +29,21 @@ public class CampaignTeamGrpcService extends ResourceTeamGrpcServiceGrpc.Resourc
                 .setCampaignTeamId(team.getId().toString())
                 .setTeamName(team.getTeamName())
                 .setLeaderPhone(team.getLeaderPhone())
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void isLeaderOfTeam(IsLeaderOfTeamRequest request, StreamObserver<IsLeaderOfTeamResponse> responseObserver) {
+        UUID leaderId = UUID.fromString(request.getLeaderId());
+        UUID teamId = UUID.fromString(request.getTeamId());
+
+        boolean isLeader = campaignTeamService.isLeaderOfTeam(leaderId, teamId);
+
+        IsLeaderOfTeamResponse response = IsLeaderOfTeamResponse.newBuilder()
+                .setIsLeader(isLeader)
                 .build();
 
         responseObserver.onNext(response);

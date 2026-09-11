@@ -4,7 +4,6 @@ import iuh.fit.common.kafka.dto.AIEvaluationNotificationResponse;
 import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.integration.dtos.response.AiEvaluationResponse;
-import iuh.fit.integration.dtos.response.NominatimResponse;
 import iuh.fit.integration.dtos.response.WeatherContextResponse;
 import iuh.fit.integration.services.AiService;
 import iuh.fit.integration.services.ChatService;

@@ -3,7 +3,6 @@ package iuh.fit.notificationservice.socket.impl;
 import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 

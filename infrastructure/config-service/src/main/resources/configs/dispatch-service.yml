@@ -47,6 +47,17 @@ spring:
 #         spring.json.trusted.packages: "iuh.fit.*"
 #         spring.json.type.mapping: >
 #           sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+aws:
+  s3:
+    bucket-name: ${BUCKET_NAME}
+    region: ${REGION}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
 
 eureka:
   client:
@@ -54,3 +65,4 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+

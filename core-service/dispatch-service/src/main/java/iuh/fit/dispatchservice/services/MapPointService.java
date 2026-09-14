@@ -7,6 +7,9 @@ import iuh.fit.dispatchservice.dtos.request.CreateSafePointRequest;
 import iuh.fit.dispatchservice.dtos.request.CreateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.request.MapPointFilterRequest;
 import iuh.fit.dispatchservice.dtos.request.MapPointRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateHazardReportRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateSafePointRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.response.*;
 import iuh.fit.dispatchservice.entity.HazardReport;
 import iuh.fit.dispatchservice.entity.MapPoint;
@@ -146,6 +149,25 @@ public class MapPointService {
     }
 
     @Transactional
+    public WarehouseDetailResponse updateWarehouse(UUID id, UpdateWarehouseRequest request) {
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy kho cứu trợ với ID: " + id));
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            warehouse.setName(request.getName().trim());
+        }
+        if (request.getManagerPhone() != null) {
+            warehouse.setManagerPhone(request.getManagerPhone().trim());
+        }
+        if (request.getIsActive() != null) {
+            warehouse.setIsActive(request.getIsActive());
+        }
+
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        return mapPointMapper.toResDTO(savedWarehouse);
+    }
+
+    @Transactional
     public MapPointDetailResponse createSafeMapPoint(CreateSafePointRequest request) {
         Point point = null;
         UUID matchedLocationId = null;
@@ -188,6 +210,28 @@ public class MapPointService {
                 savedMapPoint.getCreatedAt(),
                 mapPointMapper.toResDTO(savedSafePoint)
         );
+    }
+
+    @Transactional
+    public SafePointDetailResponse updateSafePoint(UUID id, UpdateSafePointRequest request) {
+        SafePoint safePoint = safePointRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy điểm an toàn với ID: " + id));
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            safePoint.setName(request.getName().trim());
+        }
+        if (request.getSafePointType() != null) {
+            safePoint.setSafePointType(request.getSafePointType());
+        }
+        if (request.getContactPhone() != null) {
+            safePoint.setContactPhone(request.getContactPhone().trim());
+        }
+        if (request.getIsActive() != null) {
+            safePoint.setIsActive(request.getIsActive());
+        }
+
+        SafePoint savedSafePoint = safePointRepository.save(safePoint);
+        return mapPointMapper.toResDTO(savedSafePoint);
     }
 
     @Transactional
@@ -254,5 +298,52 @@ public class MapPointService {
                 savedMapPoint.getCreatedAt(),
                 mapPointMapper.toResDTO(savedHazardReport)
         );
+    }
+
+    @Transactional
+    public HazardDetailResponse updateHazardReport(UUID id, UpdateHazardReportRequest request, List<MultipartFile> images) {
+        HazardReport hazardReport = hazardReportRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy báo cáo hiểm họa với ID: " + id));
+
+        if (request.getHazardType() != null) {
+            hazardReport.setHazardType(request.getHazardType());
+        }
+        if (request.getDescription() != null) {
+            hazardReport.setDescription(request.getDescription().trim());
+        }
+        if (request.getStatus() != null) {
+            hazardReport.setStatus(request.getStatus());
+        }
+
+        List<String> finalImageUrls;
+        if (request.getImageUrls() != null) {
+            finalImageUrls = new ArrayList<>(request.getImageUrls());
+        } else if (hazardReport.getImageUrls() != null) {
+            finalImageUrls = new ArrayList<>(hazardReport.getImageUrls());
+        } else {
+            finalImageUrls = new ArrayList<>();
+        }
+
+        List<MultipartFile> filesToUpload = new ArrayList<>();
+        if (images != null && !images.isEmpty()) {
+            filesToUpload.addAll(images);
+        }
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            for (MultipartFile file : request.getImages()) {
+                if (!filesToUpload.contains(file)) {
+                    filesToUpload.add(file);
+                }
+            }
+        }
+
+        if (!filesToUpload.isEmpty()) {
+            List<String> uploadedUrls = s3Service.uploadFiles(filesToUpload);
+            finalImageUrls.addAll(uploadedUrls);
+        }
+
+        hazardReport.setImageUrls(finalImageUrls);
+
+        HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
+        return mapPointMapper.toResDTO(savedHazardReport);
     }
 }

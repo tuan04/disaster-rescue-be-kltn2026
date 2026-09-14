@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
@@ -126,6 +127,9 @@ public class CampaignTeamService {
                 .speed(request.speed())
                 .heading(request.heading())
                 .recordedAt(Instant.now())
+                .teamName(team.getTeamName())
+                .leaderId(team.getLeaderId().toString())
+                .leaderPhone(team.getLeaderPhone())
                 .build();
 
         redisService.saveLocation(team.getId(), teamLocation);
@@ -175,5 +179,10 @@ public class CampaignTeamService {
             return false;
         }
         return campaignTeamRepository.existsByIdAndLeaderId(teamId, leaderId);
+    }
+
+
+    public List<TeamLocation> getAllTeamLocations() {
+        return redisService.getAllLocations();
     }
 }

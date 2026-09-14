@@ -10,6 +10,10 @@ public record TeamLocation(
         Double longitude,
         Double speed,
         Double heading,
-        Instant recordedAt
+        Instant recordedAt,
+        String teamName,
+        String leaderPhone,
+        String leaderId
+
 ) {
 }

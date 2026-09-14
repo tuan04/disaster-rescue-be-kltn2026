@@ -16,10 +16,14 @@ spring:
               "[/**]":
                 allowedOrigins:
                   - "http://localhost:5173"
+                  - "http://localhost:3000"
+                allowedOriginPatterns:
+                  - "http://localhost:*"
                 allowedMethods:
                   - GET
                   - POST
                   - PUT
+                  - PATCH
                   - DELETE
                   - OPTIONS
                 allowedHeaders: "*"

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -55,5 +56,12 @@ public class CampaignTeamController {
             @PathVariable("id") UUID id) {
         TeamLocation response = campaignTeamService.getTeamLocation(id);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy vị trí đội cứu hộ thành công"));
+    }
+
+
+    @GetMapping("/locations-active")
+    public ResponseEntity<ApiResponse<List<TeamLocation>>> getAllTeamLocationsActive() {
+        List<TeamLocation> locations = campaignTeamService.getAllTeamLocations();
+        return ResponseEntity.ok(ApiResponse.success(locations, "Lấy danh sách vị trí đội cứu hộ thành công"));
     }
 }

@@ -14,6 +14,7 @@ import java.util.UUID;
 public class RedisService {
 
     private static final String TEAM_LOCATION_KEY = "team:location:";
+    private static final String TEAM_LOCATION_KEY_GIS = "team:location_gis:";
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -22,7 +23,15 @@ public class RedisService {
             TeamLocation location) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
 
+        saveLocationGIS(location.latitude(), location.longitude(), campaignTeamId);
+
         redisTemplate.opsForValue().set(key, location);
+    }
+
+
+    private void saveLocationGIS(Double latitude, Double longitude, UUID campaignTeamId) {
+        String key = TEAM_LOCATION_KEY_GIS + campaignTeamId;
+        redisTemplate.opsForGeo().add(key, new org.springframework.data.geo.Point(longitude, latitude), campaignTeamId.toString());
     }
 
     public TeamLocation getCurrentLocation(UUID campaignTeamId) {

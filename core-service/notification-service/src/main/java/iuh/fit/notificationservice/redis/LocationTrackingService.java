@@ -17,7 +17,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class LocationTrackingService {
 
-    public static final String ACTIVE_USERS_LOCATION_KEY = "active_users:locations";
+    private static final String TEAM_LOCATION_KEY_GIS = "team:location_gis:";
     private final StringRedisTemplate stringRedisTemplate;
 
     /**
@@ -37,7 +37,7 @@ public class LocationTrackingService {
 
             // Gọi lệnh GEORADIUS / GEOSEARCH của Redis
             GeoResults<RedisGeoCommands.GeoLocation<String>> geoResults =
-                    stringRedisTemplate.opsForGeo().radius(ACTIVE_USERS_LOCATION_KEY, searchCircle);
+                    stringRedisTemplate.opsForGeo().radius(TEAM_LOCATION_KEY_GIS + "all", searchCircle);
 
             if (geoResults == null || geoResults.getContent().isEmpty()) {
                 return Collections.emptyList();

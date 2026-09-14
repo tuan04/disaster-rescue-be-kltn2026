@@ -14,4 +14,5 @@ public class UserInfoResponse {
     private String role;
     private String fullName;
     private String phone;
+    private UUID teamId;
 }

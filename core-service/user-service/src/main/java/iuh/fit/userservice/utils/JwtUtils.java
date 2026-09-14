@@ -58,6 +58,7 @@ public class JwtUtils {
         claims.put("role", userInfoResponse.getRole());
         claims.put("id", userInfoResponse.getId());
         claims.put("fullName", userInfoResponse.getFullName());
+        claims.put("teamId", userInfoResponse.getTeamId());
         return buildToken(claims, userInfoResponse.getPhone(), ACCESS_TOKEN_EXPIRATION);
     }
 
@@ -66,6 +67,7 @@ public class JwtUtils {
         claims.put("role", userInfoResponse.getRole());
         claims.put("id", userInfoResponse.getId());
         claims.put("fullName", userInfoResponse.getFullName());
+        claims.put("teamId", userInfoResponse.getTeamId());
         return buildToken(claims, userInfoResponse.getPhone(), REFRESH_TOKEN_EXPIRATION);
     }
 
@@ -88,6 +90,13 @@ public class JwtUtils {
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
             return true;
         }
+    }
+
+    public UUID extractTeamId(String token) {
+        final Claims claims = extractAllClaims(token);
+        Object teamIdObj = claims.get("teamId");
+        if (teamIdObj == null) return null;
+        return teamIdObj instanceof String ? UUID.fromString((String) teamIdObj) : (UUID) teamIdObj;
     }
 
     public String extractRole(String token) {

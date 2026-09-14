@@ -102,6 +102,7 @@ public class AuthController {
         }
         UserInfoResponse userInfoResponse = UserInfoResponse.builder()
                 .id(userId)
+                .teamId(jwtUtils.extractTeamId(actualRefreshToken))
                 .fullName(jwtUtils.extractFullName(actualRefreshToken))
                 .role(jwtUtils.extractRole(actualRefreshToken))
                 .phone(jwtUtils.extractPhone(actualRefreshToken))

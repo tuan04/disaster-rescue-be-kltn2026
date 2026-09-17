@@ -2,20 +2,41 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.dispatchservice.dtos.request.CreateHazardReportRequest;
+import iuh.fit.dispatchservice.dtos.request.CreateSafePointRequest;
+import iuh.fit.dispatchservice.dtos.request.CreateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.request.MapPointFilterRequest;
+import iuh.fit.dispatchservice.dtos.request.MapPointRequest;
+import iuh.fit.dispatchservice.dtos.request.StrategicPointsFilter;
+import iuh.fit.dispatchservice.dtos.request.UpdateHazardReportRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateSafePointRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.response.*;
+import iuh.fit.dispatchservice.entity.HazardReport;
 import iuh.fit.dispatchservice.entity.MapPoint;
+import iuh.fit.dispatchservice.entity.SafePoint;
+import iuh.fit.dispatchservice.entity.Warehouse;
+import iuh.fit.dispatchservice.enums.HazardStatus;
+import iuh.fit.dispatchservice.enums.PointType;
 import iuh.fit.dispatchservice.repositories.*;
 import iuh.fit.dispatchservice.utils.MapPointMapper;
 import lombok.RequiredArgsConstructor;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-
 public class MapPointService {
     private final MapPointRepository mapPointRepository;
     private final MapPointSearchRepository mapPointSearchRepository;
@@ -23,10 +44,17 @@ public class MapPointService {
     private final SafePointRepository safePointRepository;
     private final WarehouseRepository warehouseRepository;
     private final HazardReportRepository hazardReportRepository;
+    private final LocationRepository locationRepository;
+    private final S3Service s3Service;
     private final MapPointMapper mapPointMapper;
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     public List<MapPointRes> getAllMapPoints(MapPointFilterRequest filter) {
         return mapPointSearchRepository.findMapPoints(filter);
+    }
+
+    public Page<MapPointDetailResponse> findStrategicPoints(StrategicPointsFilter filter, Pageable pageable) {
+        return mapPointSearchRepository.findStrategicPoints(filter, pageable);
     }
 
     private RescueDetailResponse getRescueDetail(UUID id) {
@@ -81,5 +109,245 @@ public class MapPointService {
                 point.getCreatedAt(),
                 detail
         );
+    }
+
+    @Transactional
+    public MapPointDetailResponse createWarehouseMapPoint(CreateWarehouseRequest request) {
+        Point point = null;
+        UUID matchedLocationId = null;
+
+        if (request.getMapPoint() != null) {
+            Double lat = request.getMapPoint().getLatitude();
+            Double lng = request.getMapPoint().getLongitude();
+
+            if (lat != null && lng != null) {
+                point = geometryFactory.createPoint(new Coordinate(lng, lat));
+                matchedLocationId = locationRepository.findLocationIdContainingCoordinates(lng, lat).orElse(null);
+            }
+        }
+
+        MapPoint mapPoint = MapPoint.builder()
+                .pointType(PointType.WARE_HOUSE)
+                .address(request.getMapPoint() != null ? request.getMapPoint().getAddress() : null)
+                .location(point)
+                .locationId(matchedLocationId)
+                .isVisible(true)
+                .build();
+        MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
+
+        Warehouse warehouse = Warehouse.builder()
+                .mapPoint(savedMapPoint)
+                .name(request.getName())
+                .managerPhone(request.getManagerPhone())
+                .isActive(true)
+                .build();
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+
+        return new MapPointDetailResponse(
+                savedMapPoint.getId(),
+                savedMapPoint.getPointType(),
+                mapPointMapper.toLatitude(savedMapPoint.getLocation()),
+                mapPointMapper.toLongitude(savedMapPoint.getLocation()),
+                savedMapPoint.getAddress(),
+                savedMapPoint.getCreatedAt(),
+                mapPointMapper.toResDTO(savedWarehouse)
+        );
+    }
+
+    @Transactional
+    public WarehouseDetailResponse updateWarehouse(UUID id, UpdateWarehouseRequest request) {
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy kho cứu trợ với ID: " + id));
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            warehouse.setName(request.getName().trim());
+        }
+        if (request.getManagerPhone() != null) {
+            warehouse.setManagerPhone(request.getManagerPhone().trim());
+        }
+        if (request.getIsActive() != null) {
+            warehouse.setIsActive(request.getIsActive());
+        }
+
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        return mapPointMapper.toResDTO(savedWarehouse);
+    }
+
+    @Transactional
+    public MapPointDetailResponse createSafeMapPoint(CreateSafePointRequest request) {
+        Point point = null;
+        UUID matchedLocationId = null;
+
+        if (request.getMapPoint() != null) {
+            Double lat = request.getMapPoint().getLatitude();
+            Double lng = request.getMapPoint().getLongitude();
+
+            if (lat != null && lng != null) {
+                point = geometryFactory.createPoint(new Coordinate(lng, lat));
+                matchedLocationId = locationRepository.findLocationIdContainingCoordinates(lng, lat).orElse(null);
+            }
+        }
+
+        MapPoint mapPoint = MapPoint.builder()
+                .pointType(PointType.SAFE_ZONE)
+                .address(request.getMapPoint() != null ? request.getMapPoint().getAddress() : null)
+                .location(point)
+                .locationId(matchedLocationId)
+                .isVisible(true)
+                .build();
+        MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
+
+        SafePoint safePoint = SafePoint.builder()
+                .mapPoint(savedMapPoint)
+                .name(request.getName())
+                .safePointType(request.getSafePointType())
+                .contactPhone(request.getContactPhone())
+                .isActive(true)
+                .build();
+        SafePoint savedSafePoint = safePointRepository.save(safePoint);
+
+        return new MapPointDetailResponse(
+                savedMapPoint.getId(),
+                savedMapPoint.getPointType(),
+                mapPointMapper.toLatitude(savedMapPoint.getLocation()),
+                mapPointMapper.toLongitude(savedMapPoint.getLocation()),
+                savedMapPoint.getAddress(),
+                savedMapPoint.getCreatedAt(),
+                mapPointMapper.toResDTO(savedSafePoint)
+        );
+    }
+
+    @Transactional
+    public SafePointDetailResponse updateSafePoint(UUID id, UpdateSafePointRequest request) {
+        SafePoint safePoint = safePointRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy điểm an toàn với ID: " + id));
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            safePoint.setName(request.getName().trim());
+        }
+        if (request.getSafePointType() != null) {
+            safePoint.setSafePointType(request.getSafePointType());
+        }
+        if (request.getContactPhone() != null) {
+            safePoint.setContactPhone(request.getContactPhone().trim());
+        }
+        if (request.getIsActive() != null) {
+            safePoint.setIsActive(request.getIsActive());
+        }
+
+        SafePoint savedSafePoint = safePointRepository.save(safePoint);
+        return mapPointMapper.toResDTO(savedSafePoint);
+    }
+
+    @Transactional
+    public MapPointDetailResponse createHazardReport(CreateHazardReportRequest request, List<MultipartFile> images, UUID reporterId) {
+        MapPointRequest mapPointRequest = request.resolveMapPoint();
+
+        Point point = null;
+        UUID matchedLocationId = null;
+
+        if (mapPointRequest != null) {
+            Double lat = mapPointRequest.getLatitude();
+            Double lng = mapPointRequest.getLongitude();
+
+            if (lat != null && lng != null) {
+                point = geometryFactory.createPoint(new Coordinate(lng, lat));
+                matchedLocationId = locationRepository.findLocationIdContainingCoordinates(lng, lat).orElse(null);
+            }
+        }
+
+        List<String> allImageUrls = new ArrayList<>();
+        List<MultipartFile> filesToUpload = new ArrayList<>();
+        if (images != null && !images.isEmpty()) {
+            filesToUpload.addAll(images);
+        }
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            for (MultipartFile file : request.getImages()) {
+                if (!filesToUpload.contains(file)) {
+                    filesToUpload.add(file);
+                }
+            }
+        }
+
+        if (!filesToUpload.isEmpty()) {
+            List<String> uploadedUrls = s3Service.uploadFiles(filesToUpload);
+            allImageUrls.addAll(uploadedUrls);
+        }
+
+        MapPoint mapPoint = MapPoint.builder()
+                .pointType(PointType.HAZARD)
+                .address(mapPointRequest != null ? mapPointRequest.getAddress() : null)
+                .location(point)
+                .locationId(matchedLocationId)
+                .isVisible(true)
+                .build();
+        MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
+
+        HazardReport hazardReport = HazardReport.builder()
+                .mapPoint(savedMapPoint)
+                .reporterId(reporterId)
+                .hazardType(request.getHazardType())
+                .description(request.getDescription())
+                .imageUrls(allImageUrls)
+                .status(HazardStatus.ACTIVE)
+                .build();
+        HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
+
+        return new MapPointDetailResponse(
+                savedMapPoint.getId(),
+                savedMapPoint.getPointType(),
+                mapPointMapper.toLatitude(savedMapPoint.getLocation()),
+                mapPointMapper.toLongitude(savedMapPoint.getLocation()),
+                savedMapPoint.getAddress(),
+                savedMapPoint.getCreatedAt(),
+                mapPointMapper.toResDTO(savedHazardReport)
+        );
+    }
+
+    @Transactional
+    public HazardDetailResponse updateHazardReport(UUID id, UpdateHazardReportRequest request, List<MultipartFile> images) {
+        HazardReport hazardReport = hazardReportRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy báo cáo hiểm họa với ID: " + id));
+
+        if (request.getHazardType() != null) {
+            hazardReport.setHazardType(request.getHazardType());
+        }
+        if (request.getDescription() != null) {
+            hazardReport.setDescription(request.getDescription().trim());
+        }
+        if (request.getStatus() != null) {
+            hazardReport.setStatus(request.getStatus());
+        }
+
+        List<String> finalImageUrls;
+        if (request.getImageUrls() != null) {
+            finalImageUrls = new ArrayList<>(request.getImageUrls());
+        } else if (hazardReport.getImageUrls() != null) {
+            finalImageUrls = new ArrayList<>(hazardReport.getImageUrls());
+        } else {
+            finalImageUrls = new ArrayList<>();
+        }
+
+        List<MultipartFile> filesToUpload = new ArrayList<>();
+        if (images != null && !images.isEmpty()) {
+            filesToUpload.addAll(images);
+        }
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            for (MultipartFile file : request.getImages()) {
+                if (!filesToUpload.contains(file)) {
+                    filesToUpload.add(file);
+                }
+            }
+        }
+
+        if (!filesToUpload.isEmpty()) {
+            List<String> uploadedUrls = s3Service.uploadFiles(filesToUpload);
+            finalImageUrls.addAll(uploadedUrls);
+        }
+
+        hazardReport.setImageUrls(finalImageUrls);
+
+        HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
+        return mapPointMapper.toResDTO(savedHazardReport);
     }
 }

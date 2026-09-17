@@ -3,11 +3,13 @@ package iuh.fit.userservice.service.impl;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
 import iuh.fit.userservice.dto.response.UserProfileResponse;
 import iuh.fit.userservice.entity.User;
 
 import iuh.fit.userservice.entity.VolunteerProfile;
 import iuh.fit.userservice.enums.RoleEnum;
+import iuh.fit.userservice.enums.RoleInTeamEnum;
 import iuh.fit.userservice.enums.VerifiedStatusEnum;
 import iuh.fit.userservice.repository.UserRepository;
 import iuh.fit.userservice.repository.VolunteerProfileRepository;
@@ -16,13 +18,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @AllArgsConstructor
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final VolunteerProfileRepository volunteerProfileRepository;
 
     @Override
     public boolean checkUserExist(UUID userId) {
@@ -75,6 +77,14 @@ public class UserServiceImpl implements UserService {
     public UserProfileResponse getUserProfile(UUID userId) {
         User user = findUserById(userId);
         return UserProfileResponse.fromEntity(user);
+    }
+
+    @Override
+    public List<UserIDAndNameResponse> getUserNames() {
+        return userRepository.findByVolunteerProfile_VerifiedStatusAndVolunteerProfile_CurrentRoleInTeam(VerifiedStatusEnum.VERIFIED, RoleInTeamEnum.COORDINATOR)
+                .stream()
+                .map(user -> new UserIDAndNameResponse(user.getId(), user.getFullName()))
+                .toList();
     }
 
     private User findUserById(UUID userId) {

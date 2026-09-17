@@ -72,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
         }
         return UserInfoResponse.builder()
                 .id(user.getId())
+                .teamId(user.getVolunteerProfile() != null ? user.getVolunteerProfile().getTeamId() : null)
                 .fullName(user.getFullName())
                 .role(user.getEffectiveRole())
                 .phone(user.getPhone())

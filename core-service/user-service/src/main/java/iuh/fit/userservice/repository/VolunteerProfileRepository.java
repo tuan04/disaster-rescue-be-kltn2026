@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface VolunteerProfileRepository extends JpaRepository<VolunteerProfile, UUID> {
-    VolunteerProfile findByUserId(UUID userId);
+
+
 }

@@ -3,7 +3,6 @@ package iuh.fit.dispatchservice.entity;
 import iuh.fit.dispatchservice.enums.LocationStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 
 import java.time.LocalDateTime;
@@ -32,9 +31,6 @@ public class Location {
     // Lưu ý: Yêu cầu cài đặt PostGIS dưới database và dùng Hibernate Spatial
     @Column(name = "boundary", columnDefinition = "geometry(Polygon, 4326)")
     private Polygon boundary;
-
-    @Column(name = "center_point", columnDefinition = "geometry(Point, 4326)")
-    private Point centerPoint;
 
     // 3. Quy tắc điều phối & Bán kính
     @Builder.Default

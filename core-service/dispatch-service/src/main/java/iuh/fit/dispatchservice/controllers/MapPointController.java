@@ -1,13 +1,7 @@
 package iuh.fit.dispatchservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
-import iuh.fit.dispatchservice.dtos.request.CreateHazardReportRequest;
-import iuh.fit.dispatchservice.dtos.request.CreateSafePointRequest;
-import iuh.fit.dispatchservice.dtos.request.CreateWarehouseRequest;
-import iuh.fit.dispatchservice.dtos.request.MapPointFilterRequest;
-import iuh.fit.dispatchservice.dtos.request.UpdateHazardReportRequest;
-import iuh.fit.dispatchservice.dtos.request.UpdateSafePointRequest;
-import iuh.fit.dispatchservice.dtos.request.UpdateWarehouseRequest;
+import iuh.fit.dispatchservice.dtos.request.*;
 import iuh.fit.dispatchservice.dtos.response.HazardDetailResponse;
 import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
 import iuh.fit.dispatchservice.dtos.response.MapPointRes;
@@ -16,6 +10,9 @@ import iuh.fit.dispatchservice.dtos.response.WarehouseDetailResponse;
 import iuh.fit.dispatchservice.services.MapPointService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/v1/map-points")
@@ -43,6 +41,15 @@ public class MapPointController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(mapPointService.getDetail(id)));
     }
+
+    @GetMapping("/strategic-points")
+    public ResponseEntity<ApiResponse<Page<MapPointDetailResponse>>> getStrategicPoints(
+            @PageableDefault(page = 0, size = 10) Pageable pageable,
+            @ModelAttribute StrategicPointsFilter filter
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(mapPointService.findStrategicPoints(filter, pageable)));
+    }
+
 
     @PostMapping("/warehouses")
     public ResponseEntity<ApiResponse<MapPointDetailResponse>> createWarehouseMapPoint(

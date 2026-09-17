@@ -1,8 +1,11 @@
 package iuh.fit.userservice.repository;
 
 import iuh.fit.userservice.entity.User;
+import iuh.fit.userservice.enums.RoleInTeamEnum;
+import iuh.fit.userservice.enums.VerifiedStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -10,5 +13,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
    User findByPhone(String phone);
 
-   User findUserByPhoneAndPassword(String phone, String password);
+   List<User> findByVolunteerProfile_VerifiedStatusAndVolunteerProfile_CurrentRoleInTeam(
+           VerifiedStatusEnum status,
+           RoleInTeamEnum role
+   );
+
 }

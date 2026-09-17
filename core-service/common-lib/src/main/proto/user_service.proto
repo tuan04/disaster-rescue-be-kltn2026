@@ -1,0 +1,28 @@
+syntax = "proto3";
+package iuh.fit.common.grpc;
+
+option java_package = "iuh.fit.common.grpc";
+option java_multiple_files = true;
+
+service UserGrpcService {
+    rpc GetUsersByIds (GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+    rpc GetUserById (GetUserByIdRequest) returns (UserInfoGrpcResponse);
+}
+
+message GetUsersByIdsRequest {
+    repeated string user_ids = 1;
+}
+
+message GetUsersByIdsResponse {
+    repeated UserInfoGrpcResponse users = 1;
+}
+
+message GetUserByIdRequest {
+    string user_id = 1;
+}
+
+message UserInfoGrpcResponse {
+    string id = 1;
+    string full_name = 2;
+    string phone_number = 3;
+}

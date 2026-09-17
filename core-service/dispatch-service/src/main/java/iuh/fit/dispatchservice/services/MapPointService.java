@@ -7,6 +7,7 @@ import iuh.fit.dispatchservice.dtos.request.CreateSafePointRequest;
 import iuh.fit.dispatchservice.dtos.request.CreateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.request.MapPointFilterRequest;
 import iuh.fit.dispatchservice.dtos.request.MapPointRequest;
+import iuh.fit.dispatchservice.dtos.request.StrategicPointsFilter;
 import iuh.fit.dispatchservice.dtos.request.UpdateHazardReportRequest;
 import iuh.fit.dispatchservice.dtos.request.UpdateSafePointRequest;
 import iuh.fit.dispatchservice.dtos.request.UpdateWarehouseRequest;
@@ -24,6 +25,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +51,10 @@ public class MapPointService {
 
     public List<MapPointRes> getAllMapPoints(MapPointFilterRequest filter) {
         return mapPointSearchRepository.findMapPoints(filter);
+    }
+
+    public Page<MapPointDetailResponse> findStrategicPoints(StrategicPointsFilter filter, Pageable pageable) {
+        return mapPointSearchRepository.findStrategicPoints(filter, pageable);
     }
 
     private RescueDetailResponse getRescueDetail(UUID id) {
@@ -129,7 +136,6 @@ public class MapPointService {
         MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
 
         Warehouse warehouse = Warehouse.builder()
-                .id(savedMapPoint.getId())
                 .mapPoint(savedMapPoint)
                 .name(request.getName())
                 .managerPhone(request.getManagerPhone())
@@ -192,7 +198,6 @@ public class MapPointService {
         MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
 
         SafePoint safePoint = SafePoint.builder()
-                .id(savedMapPoint.getId())
                 .mapPoint(savedMapPoint)
                 .name(request.getName())
                 .safePointType(request.getSafePointType())
@@ -279,7 +284,6 @@ public class MapPointService {
         MapPoint savedMapPoint = mapPointRepository.save(mapPoint);
 
         HazardReport hazardReport = HazardReport.builder()
-                .id(savedMapPoint.getId())
                 .mapPoint(savedMapPoint)
                 .reporterId(reporterId)
                 .hazardType(request.getHazardType())

@@ -9,11 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import iuh.fit.dispatchservice.dtos.request.CreateLocationRequest;
+import iuh.fit.dispatchservice.dtos.request.UpdateLocationRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,5 +44,22 @@ public class LocationController {
                 pageable
         );
         return ResponseEntity.ok(ApiResponse.success(pageResult, "Lấy danh sách địa điểm thành công"));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<LocationPageResponse>> createLocation(
+            @Valid @RequestBody CreateLocationRequest request
+    ) {
+        LocationPageResponse response = locationService.createLocation(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Tạo khu vực thành công"));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<LocationPageResponse>> updateLocation(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateLocationRequest request
+    ) {
+        LocationPageResponse response = locationService.updateLocation(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật khu vực thành công"));
     }
 }

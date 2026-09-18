@@ -11,7 +11,7 @@ public record LocationPageResponse(
         UUID id,
         UUID userId,
         String name,
-        GeoJsonPolygonDto boundary,
+        GeoJsonPolygon boundary,
         Integer radiusMeters,
         LocationStatus status,
         Boolean isActive,

@@ -15,7 +15,7 @@ public class LocationEventConsumer {
     private static final String LOCATION_TOPIC = "location-events";
 
     @KafkaListener(topics = LOCATION_TOPIC)
-    public void consumTeamLocationUpdate(TeamLocationUpdatedEvent teamLocation) {
+    public void consumeTeamLocationUpdate(TeamLocationUpdatedEvent teamLocation) {
         log.info("Received location update: {}", teamLocation);
 
         webSocketNotificationService.broadcast("/topic/teams/%s/location".formatted(teamLocation.teamId()),

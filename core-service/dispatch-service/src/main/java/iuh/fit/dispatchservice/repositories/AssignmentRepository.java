@@ -8,7 +8,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
-    Optional<Assignment> findByCampaignTeamIdAndStatus(
-            UUID campaignTeamId,
-            AssignmentStatus status);
+        Optional<Assignment> findByCampaignTeamIdAndStatus(
+                        UUID campaignTeamId,
+                        AssignmentStatus status);
+
+        Optional<Assignment> findByRescueRequestIdAndStatus(
+                        UUID rescueRequestId,
+                        AssignmentStatus status);
 }

@@ -32,7 +32,6 @@ public class RedisService {
         redisTemplate.opsForValue().set(key, location);
     }
 
-
     private void saveLocationGIS(Double latitude, Double longitude, UUID campaignTeamId) {
         String key = TEAM_LOCATION_KEY_GIS + campaignTeamId;
         redisTemplate.opsForGeo().add(key, new org.springframework.data.geo.Point(longitude, latitude), campaignTeamId.toString());

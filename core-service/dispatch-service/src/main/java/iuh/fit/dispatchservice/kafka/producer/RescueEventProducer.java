@@ -1,5 +1,6 @@
 package iuh.fit.dispatchservice.kafka.producer;
 
+import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
 import iuh.fit.common.kafka.dto.RescueCanceledEvent;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,14 @@ import org.springframework.stereotype.Component;
 public class RescueEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public void publishRescueAcceptedEvent(RescueAcceptedEvent event) {
+        log.info("Publishing RescueAcceptedEvent to topic {}: {}", RescueAcceptedEvent.TOPIC_NAME, event);
+        kafkaTemplate.send(
+                RescueAcceptedEvent.TOPIC_NAME,
+                event.teamId().toString(),
+                event);
+    }
 
     public void publishRescueCompletedEvent(RescueCompletedEvent event) {
         log.info("Publishing RescueCompletedEvent to topic {}: {}", RescueCompletedEvent.TOPIC_NAME, event);

@@ -2,7 +2,13 @@ package iuh.fit.resourcemanagementservice.services;
 
 import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.geo.Circle;
+import org.springframework.data.geo.Distance;
+import org.springframework.data.geo.GeoResults;
+import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,7 +26,28 @@ public class RedisService {
     private static final String TEAM_LOCATION_KEY_GIS = "team:location_gis:";
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+
+    public List<String> findTeamIdRadius(double longitude, double latitude, int radiusMeters) {
+
+        Point centerPoint = new Point(longitude, latitude);
+        Distance searchDistance = new Distance(radiusMeters, RedisGeoCommands.DistanceUnit.METERS);
+        Circle searchCircle = new Circle(centerPoint, searchDistance);
+
+        GeoResults<RedisGeoCommands.GeoLocation<String>> geoResults =
+                stringRedisTemplate.opsForGeo().radius(TEAM_LOCATION_KEY_GIS + "all", searchCircle);
+
+        if (geoResults == null || geoResults.getContent().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> teamIds = geoResults.getContent().stream()
+                .map(result -> result.getContent().getName())
+                .filter(Objects::nonNull)
+                .toList();
+        return teamIds;
+    }
 
     public void saveLocation(
             UUID campaignTeamId,
@@ -32,10 +59,14 @@ public class RedisService {
         redisTemplate.opsForValue().set(key, location);
     }
 
-
     private void saveLocationGIS(Double latitude, Double longitude, UUID campaignTeamId) {
+        Point point = new Point(longitude, latitude);
+        String teamIdStr = campaignTeamId.toString();
+
+        stringRedisTemplate.opsForGeo().add(TEAM_LOCATION_KEY_GIS + "all", point, teamIdStr);
+
         String key = TEAM_LOCATION_KEY_GIS + campaignTeamId;
-        redisTemplate.opsForGeo().add(key, new org.springframework.data.geo.Point(longitude, latitude), campaignTeamId.toString());
+        stringRedisTemplate.opsForGeo().add(key, point, teamIdStr);
     }
 
     public TeamLocation getCurrentLocation(UUID campaignTeamId) {

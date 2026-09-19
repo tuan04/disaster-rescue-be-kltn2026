@@ -1,10 +1,12 @@
 package iuh.fit.resourcemanagementservice.repositories;
 
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
+import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +24,8 @@ public interface CampaignTeamRepository extends JpaRepository<CampaignTeam, UUID
     );
 
     boolean existsByIdAndLeaderId(UUID id, UUID leaderId);
+
+    List<CampaignTeam> findByIdInAndStatus(List<UUID> ids, TeamStatus status);
+
+
 }

@@ -21,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
@@ -184,5 +186,22 @@ public class CampaignTeamService {
 
     public List<TeamLocation> getAllTeamLocations() {
         return redisService.getAllLocations();
+    }
+
+
+    public List<CampaignTeam> getTeamsLocationsNearby(Double latitude, Double longitude, Integer radiusInMeters) {
+        List<UUID> nearbyUserIds = redisService.findTeamIdRadius(longitude, latitude, radiusInMeters)
+                .stream()
+                .map(id -> {
+                    return UUID.fromString(id);
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (nearbyUserIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return campaignTeamRepository.findByIdInAndStatus(nearbyUserIds, TeamStatus.READY);
     }
 }

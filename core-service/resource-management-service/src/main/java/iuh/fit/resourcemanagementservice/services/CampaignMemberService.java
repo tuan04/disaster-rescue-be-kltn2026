@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -20,6 +21,7 @@ public class CampaignMemberService {
 
     private final CampaignMemberRepository campaignMemberRepository;
     private final CampaignTeamRepository campaignTeamRepository;
+    private final RedisService redisService;
 
     /**
      * Thêm thành viên vào Đội Cứu hộ
@@ -86,4 +88,7 @@ public class CampaignMemberService {
         team.setTotalParticipants(Math.max(0, currentParticipants - 1));
         campaignTeamRepository.save(team);
     }
+
+
+
 }

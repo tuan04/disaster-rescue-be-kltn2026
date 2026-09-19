@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.kafka.annotation.EnableKafka;
 
-@SpringBootApplication(scanBasePackages = { "iuh.fit.common", "iuh.fit.dispatchservice" })
+@SpringBootApplication(scanBasePackages = { "iuh.fit.dispatchservice","iuh.fit.common"  })
 public class DispatchServiceApplication {
 
     public static void main(String[] args) {

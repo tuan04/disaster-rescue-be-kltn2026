@@ -14,11 +14,16 @@ import iuh.fit.dispatchservice.dtos.request.UpdateWarehouseRequest;
 import iuh.fit.dispatchservice.dtos.response.*;
 import iuh.fit.dispatchservice.entity.HazardReport;
 import iuh.fit.dispatchservice.entity.MapPoint;
+import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.entity.SafePoint;
 import iuh.fit.dispatchservice.entity.Warehouse;
+import iuh.fit.dispatchservice.enums.EmergencyLevel;
 import iuh.fit.dispatchservice.enums.HazardStatus;
 import iuh.fit.dispatchservice.enums.PointType;
+import iuh.fit.dispatchservice.enums.RequestSource;
+import iuh.fit.dispatchservice.enums.RequestStatus;
 import iuh.fit.dispatchservice.repositories.*;
+import iuh.fit.dispatchservice.repositories.specifications.RescueRequestSpecification;
 import iuh.fit.dispatchservice.utils.MapPointMapper;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
@@ -27,10 +32,12 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -350,4 +357,40 @@ public class MapPointService {
         HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
         return mapPointMapper.toResDTO(savedHazardReport);
     }
+
+    @Transactional(readOnly = true)
+    public Page<MapPointDetailResponse> getPendingRescueRequests(
+            EmergencyLevel emergencyLevel,
+            RequestSource source,
+            Pageable pageable
+    ) {
+        Specification<RescueRequest> spec = RescueRequestSpecification.filter(
+                RequestStatus.PENDING,
+                emergencyLevel,
+                source
+        );
+
+        Page<RescueRequest> page = rescueRequestRepository.findAll(spec, pageable);
+
+        return page.map(rescue -> {
+            MapPoint mp = rescue.getMapPoint();
+            Point loc = mp != null ? mp.getLocation() : null;
+            double lat = mapPointMapper.toLatitude(loc);
+            double lng = mapPointMapper.toLongitude(loc);
+            String address = mp != null ? mp.getAddress() : null;
+            LocalDateTime createdAt = mp != null ? mp.getCreatedAt() : rescue.getCreatedAt();
+
+            return new MapPointDetailResponse(
+                    rescue.getId(),
+                    PointType.SOS,
+                    lat,
+                    lng,
+                    address,
+                    createdAt,
+                    mapPointMapper.toResDTO(rescue)
+            );
+        });
+    }
 }
+
+

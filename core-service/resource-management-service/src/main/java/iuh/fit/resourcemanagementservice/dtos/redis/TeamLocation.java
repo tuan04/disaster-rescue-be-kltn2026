@@ -14,6 +14,5 @@ public record TeamLocation(
         String teamName,
         String leaderPhone,
         String leaderId
-
 ) {
 }

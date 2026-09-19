@@ -3,6 +3,7 @@ package iuh.fit.dispatchservice.services;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.grpc.TeamInfoResponse;
+import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +88,18 @@ public class AssignmentService {
 
     @Transactional
     public Assignment acceptRescueByLeader(UUID requestId, UUID leaderId, String notes) {
-        return createAssignment(requestId, leaderId, notes, AssignmentStatus.ACCEPTED);
+        Assignment assignment = createAssignment(requestId, leaderId, notes, AssignmentStatus.ACCEPTED);
+
+        RescueAcceptedEvent event = new RescueAcceptedEvent(
+                assignment.getId(),
+                assignment.getRescueRequest().getId(),
+                assignment.getCampaignTeamId(),
+                assignment.getAssignedTeamName(),
+                assignment.getLeaderPhone(),
+                Instant.now());
+        rescueEventProducer.publishRescueAcceptedEvent(event);
+
+        return assignment;
     }
 
     private void validateLeaderOwnsAssignment(Assignment assignment, UUID leaderId) {
@@ -176,5 +189,15 @@ public class AssignmentService {
         return assignments.stream()
                 .map(AssignmentResponse::fromEntity)
                 .toList();
+    }
+    public AssignmentResponse getActiveAssignmentByRequestId(UUID requestId) {
+        if (requestId == null) {
+            return null;
+        }
+
+        return assignmentRepository
+                .findByRescueRequestIdAndStatus(requestId, AssignmentStatus.ACCEPTED)
+                .map(AssignmentResponse::fromEntity)
+                .orElse(null);
     }
 }

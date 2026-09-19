@@ -14,5 +14,9 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
             UUID campaignTeamId,
             AssignmentStatus status);
 
+    Optional<Assignment> findByRescueRequestIdAndStatus(
+            UUID rescueRequestId,
+            AssignmentStatus status);
+
     List<Assignment> findByRescueRequestIdOrderByCreatedAtDesc(UUID requestId);
 }

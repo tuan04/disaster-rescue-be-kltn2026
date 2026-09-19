@@ -7,11 +7,14 @@ import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
 import iuh.fit.dispatchservice.dtos.response.MapPointRes;
 import iuh.fit.dispatchservice.dtos.response.SafePointDetailResponse;
 import iuh.fit.dispatchservice.dtos.response.WarehouseDetailResponse;
+import iuh.fit.dispatchservice.enums.EmergencyLevel;
+import iuh.fit.dispatchservice.enums.RequestSource;
 import iuh.fit.dispatchservice.services.MapPointService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +52,19 @@ public class MapPointController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(mapPointService.findStrategicPoints(filter, pageable)));
     }
+
+    @GetMapping("/rescue-requests-pending")
+    public ResponseEntity<ApiResponse<Page<MapPointDetailResponse>>> getPendingRescueRequests(
+            @RequestParam(required = false) EmergencyLevel emergencyLevel,
+            @RequestParam(required = false) RequestSource source,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                mapPointService.getPendingRescueRequests(emergencyLevel, source, pageable),
+                "Lấy danh sách yêu cầu cứu hộ chờ xử lý thành công"
+        ));
+    }
+
 
 
     @PostMapping("/warehouses")

@@ -6,6 +6,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
+import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.services.CampaignTeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,5 +64,15 @@ public class CampaignTeamController {
     public ResponseEntity<ApiResponse<List<TeamLocation>>> getAllTeamLocationsActive() {
         List<TeamLocation> locations = campaignTeamService.getAllTeamLocations();
         return ResponseEntity.ok(ApiResponse.success(locations, "Lấy danh sách vị trí đội cứu hộ thành công"));
+    }
+
+    @GetMapping("/nearby")
+    public ResponseEntity<ApiResponse<List<CampaignTeam>>> getAllTeamLocationsNearBy(
+            @RequestParam(name = "latitude", required = true) Double latitude,
+            @RequestParam(name = "longitude", required = true) Double longitude,
+            @RequestParam(name = "radiusInMeters", required = true) Integer  radiusInMeters
+    ) {
+        List<CampaignTeam> locations = campaignTeamService.getTeamsLocationsNearby(latitude, longitude, radiusInMeters);
+        return ResponseEntity.ok(ApiResponse.success(locations, "Lấy danh sách vị trí đội cứu hộ gần đây thành công"));
     }
 }

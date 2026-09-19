@@ -113,6 +113,8 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 | `PUT` | `/api/v1/sos-requests` | `Authorization: Bearer <token>` | Cập nhật thông tin / trạng thái yêu cầu SOS | `UpdateSOSRequest` (id, reporterPhone, content, status) |
 | `GET` | `/api/v1/map-points` | Public / Rescuer | Lấy danh sách điểm bản đồ kèm bộ lọc (SOS, Hazard, Safe Zone, Warehouse) | Query Params: `pointTypes`, `rescueStatuses`, `emergencyLevels`, `hazardStatuses`, `fromTime`, `toTime`... |
 | `GET` | `/api/v1/map-points/{id}` | Public / Rescuer | Xem chi tiết thông tin một điểm trên bản đồ theo ID | Path Variable: `id` (UUID) |
+| `GET` | `/api/v1/map-points/rescue-requests` | Public / Rescuer | Lấy danh sách yêu cầu cứu hộ ở trạng thái PENDING phân trang (lọc theo EmergencyLevel, source) | Query Params: `emergencyLevel`, `source`, `page`, `size`, `sort` |
+
 | `GET` | `/api/v1/locations` | Public / Authenticated | Lấy danh sách toàn bộ khu vực đang hoạt động | Không |
 | `GET` | `/api/v1/locations/pages` | Public / Authenticated | Lấy danh sách khu vực phân trang kèm thông tin quản trị viên | Query: `isActive`, `userId`, `status`, `page`, `size` |
 | `POST` | `/api/v1/locations` | `Authorization` (Manager/Admin) | Tạo mới khu vực điều phối | `CreateLocationRequest` (name, userId, boundary, radiusMeters, status, isActive) |

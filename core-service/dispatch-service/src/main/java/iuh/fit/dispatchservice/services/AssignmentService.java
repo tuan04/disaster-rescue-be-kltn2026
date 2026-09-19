@@ -6,6 +6,7 @@ import iuh.fit.common.grpc.TeamInfoResponse;
 import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
+import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.entity.RescueRequest;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import iuh.fit.common.kafka.dto.RescueCanceledEvent;
@@ -58,7 +60,30 @@ public class AssignmentService {
             rescueRequest.setStatus(RequestStatus.ACCEPTED);
         }
 
+
         return assignmentRepository.save(assignment);
+    }
+
+    @Transactional
+    public List<Assignment> assignRescueByTeam(UUID requestId, List<RescueAssignmentRequest> assignmentRequests) {
+        if (assignmentRequests == null || assignmentRequests.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Danh sách phân công cứu hộ không được để trống");
+        }
+
+        RescueRequest rescueRequest = rescueService.getRescueRequest(requestId);
+
+        List<Assignment> assignmentsToSave = assignmentRequests.stream()
+                .map(req -> Assignment.builder()
+                        .rescueRequest(rescueRequest)
+                        .campaignTeamId(req.campaignTeamId())
+                        .assignedTeamName(req.teamName())
+                        .leaderPhone(req.leaderPhone())
+                        .notes(req.note())
+                        .status(AssignmentStatus.ASSIGNED)
+                        .build())
+                .toList();
+
+        return assignmentRepository.saveAll(assignmentsToSave);
     }
 
     @Transactional
@@ -158,6 +183,13 @@ public class AssignmentService {
                 .orElse(null);
     }
 
+
+    public List<AssignmentResponse> getAssignmentByRequestId(UUID requestId) {
+        List<Assignment> assignments = assignmentRepository.findByRescueRequestIdOrderByCreatedAtDesc(requestId);
+        return assignments.stream()
+                .map(AssignmentResponse::fromEntity)
+                .toList();
+    }
     public AssignmentResponse getActiveAssignmentByRequestId(UUID requestId) {
         if (requestId == null) {
             return null;

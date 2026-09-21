@@ -4,6 +4,7 @@ import iuh.fit.common.response.ApiResponse;
 import iuh.fit.dispatchservice.dtos.request.CancelAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.services.AssignmentService;
 import jakarta.validation.Valid;
@@ -55,6 +56,37 @@ public class AssignmentController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping("/teams/{teamId}/rescue-requests/{requestId}/accept")
+    public ResponseEntity<ApiResponse<Void>> acceptAssignedRescue(
+            @PathVariable UUID teamId,
+            @PathVariable UUID requestId,
+            @RequestParam(required = false) String note) {
+        assignmentService.acceptAssignedRescueByTeam(
+                teamId,
+                requestId,
+                note
+        );
+        return ResponseEntity.ok(ApiResponse.success(null, "Tiếp nhận nhiệm vụ cứu hộ thành công"));
+    }
+
+    @PostMapping("/teams/{teamId}/rescue-requests/{requestId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectAssignedRescue(
+            @PathVariable UUID teamId,
+            @PathVariable UUID requestId,
+            @RequestParam(required = false) String reason) {
+        assignmentService.rejectAssignedRescueByTeam(
+                teamId,
+                requestId,
+                reason);
+        return ResponseEntity.ok(ApiResponse.success(null, "Từ chối nhiệm vụ cứu hộ thành công"));
+    }
+
+    @GetMapping("/teams/{teamId}/pending")
+    public ResponseEntity<ApiResponse<List<MapPointDetailResponse>>> getPendingAssignmentsByTeamId(
+            @PathVariable UUID teamId) {
+        List<MapPointDetailResponse> response = assignmentService.getPendingAssignmentsByTeamId(teamId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách nhiệm vụ chờ tiếp nhận thành công"));
+    }
 
     @GetMapping("/teams/{teamId}/active")
     public ResponseEntity<ApiResponse<AssignmentResponse>> getActiveMissionByTeam(

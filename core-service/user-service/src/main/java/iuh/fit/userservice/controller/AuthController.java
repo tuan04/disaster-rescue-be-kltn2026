@@ -206,6 +206,7 @@ public class AuthController {
         UUID userId = jwtUtils.extractId(accessToken);
         UserInfoResponse userInfoResponse = UserInfoResponse.builder()
                 .id(userId)
+                .teamId(jwtUtils.extractTeamId(accessToken))
                 .fullName(jwtUtils.extractFullName(accessToken))
                 .role(jwtUtils.extractRole(accessToken))
                 .phone(jwtUtils.extractPhone(accessToken))

@@ -24,7 +24,12 @@ import java.util.List;
 import java.util.UUID;
 
 import iuh.fit.common.kafka.dto.RescueCanceledEvent;
+import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
+import iuh.fit.dispatchservice.entity.MapPoint;
+import iuh.fit.dispatchservice.enums.PointType;
 import iuh.fit.dispatchservice.kafka.producer.RescueEventProducer;
+import iuh.fit.dispatchservice.utils.MapPointMapper;
+import org.locationtech.jts.geom.Point;
 
 @Slf4j
 @Service
@@ -35,6 +40,7 @@ public class AssignmentService {
     private final RescueService rescueService;
     private final ResourceTeamGrpcClient resourceTeamGrpcClient;
     private final RescueEventProducer rescueEventProducer;
+    private final MapPointMapper mapPointMapper;
 
     private Assignment findById(UUID assignmentId) {
         return assignmentRepository.findById(assignmentId)
@@ -100,6 +106,111 @@ public class AssignmentService {
         rescueEventProducer.publishRescueAcceptedEvent(event);
 
         return assignment;
+    }
+
+    @Transactional
+    public void acceptAssignedRescueByTeam(UUID teamId, UUID requestId, String note) {
+        if (teamId == null || requestId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "teamId và requestId không được để trống");
+        }
+
+        Assignment assignment = assignmentRepository.findByCampaignTeamIdAndRescueRequestId(teamId, requestId, AssignmentStatus.ASSIGNED)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Không tìm thấy nhiệm vụ phân công cho đội cứu hộ này"));
+
+        if (assignment.getStatus() == AssignmentStatus.ACCEPTED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã tiếp nhận nhiệm vụ này trước đó");
+        }
+
+        if (assignment.getStatus() != AssignmentStatus.ASSIGNED) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    "Nhiệm vụ không ở trạng thái chờ tiếp nhận (trạng thái hiện tại: " + assignment.getStatus() + ")");
+        }
+
+        RescueRequest rescueRequest = assignment.getRescueRequest();
+        if (rescueRequest.getStatus() != RequestStatus.PENDING) {
+            throw new BusinessException(ErrorCode.CONFLICT,
+                    "Yêu cầu cứu hộ này đã có đội khác tiếp nhận hoặc đã kết thúc");
+        }
+
+        // Cập nhật trạng thái yêu cầu cứu nạn thành ACCEPTED
+        rescueRequest.setStatus(RequestStatus.ACCEPTED);
+
+        // Cập nhật trạng thái nhiệm vụ của đội thành ACCEPTED
+        assignment.setStatus(AssignmentStatus.ACCEPTED);
+        assignment.setRespondedAt(LocalDateTime.now());
+        if (note != null && !note.trim().isEmpty()) {
+            assignment.setNotes(assignment.getNotes() != null && !assignment.getNotes().isEmpty()
+                    ? assignment.getNotes() + " | " + note.trim()
+                    : note.trim());
+        }
+
+        assignmentRepository.save(assignment);
+    }
+
+    @Transactional
+    public void rejectAssignedRescueByTeam(UUID teamId, UUID requestId, String reason) {
+        if (teamId == null || requestId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "teamId và requestId không được để trống");
+        }
+
+        Assignment assignment = assignmentRepository.findByCampaignTeamIdAndRescueRequestId(teamId, requestId, AssignmentStatus.ASSIGNED)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Không tìm thấy nhiệm vụ phân công cho đội cứu hộ này"));
+
+        if (assignment.getStatus() == AssignmentStatus.REJECTED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã từ chối nhiệm vụ này trước đó");
+        }
+
+        if (assignment.getStatus() != AssignmentStatus.ASSIGNED) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    "Chỉ có thể từ chối nhiệm vụ đang ở trạng thái chờ tiếp nhận (trạng thái hiện tại: " + assignment.getStatus() + ")");
+        }
+
+        assignment.setStatus(AssignmentStatus.REJECTED);
+        assignment.setRespondedAt(LocalDateTime.now());
+        if (reason != null && !reason.trim().isEmpty()) {
+            String rejectNote = "Lý do từ chối: " + reason.trim();
+            assignment.setNotes(assignment.getNotes() != null && !assignment.getNotes().isEmpty()
+                    ? assignment.getNotes() + " | " + rejectNote
+                    : rejectNote);
+        }
+
+        assignmentRepository.save(assignment);
+    }
+
+    public List<MapPointDetailResponse> getPendingAssignmentsByTeamId(UUID teamId) {
+        if (teamId == null) {
+            return List.of();
+        }
+
+        List<Assignment> assignments = assignmentRepository.findPendingAssignmentsByTeam(
+                teamId,
+                AssignmentStatus.ASSIGNED,
+                RequestStatus.PENDING
+        );
+
+        return assignments.stream()
+                .map(assignment -> {
+                    RescueRequest rescue = assignment.getRescueRequest();
+                    MapPoint mp = rescue != null ? rescue.getMapPoint() : null;
+                    Point loc = mp != null ? mp.getLocation() : null;
+                    double lat = mapPointMapper.toLatitude(loc);
+                    double lng = mapPointMapper.toLongitude(loc);
+                    String address = mp != null ? mp.getAddress() : null;
+                    LocalDateTime createdAt = mp != null ? mp.getCreatedAt() : (rescue != null ? rescue.getCreatedAt() : null);
+
+                    return new MapPointDetailResponse(
+                            rescue != null ? rescue.getId() : null,
+                            PointType.SOS,
+                            lat,
+                            lng,
+                            address,
+                            createdAt,
+                            rescue != null ? mapPointMapper.toResDTO(rescue) : null
+                    );
+                })
+                .toList();
     }
 
     private void validateLeaderOwnsAssignment(Assignment assignment, UUID leaderId) {
@@ -190,6 +301,7 @@ public class AssignmentService {
                 .map(AssignmentResponse::fromEntity)
                 .toList();
     }
+
     public AssignmentResponse getActiveAssignmentByRequestId(UUID requestId) {
         if (requestId == null) {
             return null;

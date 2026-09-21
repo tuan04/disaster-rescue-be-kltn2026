@@ -120,6 +120,15 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 | `POST` | `/api/v1/locations` | `Authorization` (Manager/Admin) | Tạo mới khu vực điều phối | `CreateLocationRequest` (name, userId, boundary, radiusMeters, status, isActive) |
 | `PATCH` / `PUT` | `/api/v1/locations/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin khu vực (chỉ cho phép sửa: userId, name, radiusMeters, status, isActive) | Path: `id`<br>`UpdateLocationRequest` (userId, name, radiusMeters, status, isActive) |
 | `POST` | `/api/v1/assignments/rescue-requests/{requestId}/accept` | `Authorization: Bearer <token>` | Trưởng đội cứu hộ chấp nhận yêu cầu cứu nạn (gọi gRPC xác thực đội) | Path: `requestId`<br>Query: `leaderId`, `note` |
+| `POST` | `/api/v1/assignments/rescue-requests/{requestId}/assign` | `Authorization` (Manager/Admin) | Điều phối phân công nhiều đội cứu hộ cho yêu cầu cứu nạn | Path: `requestId`<br>Body: `List<RescueAssignmentRequest>` |
+| `GET` | `/api/v1/assignments/{requestId}` | Public / Rescuer | Lấy danh sách phân công theo yêu cầu cứu nạn | Path: `requestId` |
+| `POST` | `/api/v1/assignments/teams/{teamId}/rescue-requests/{requestId}/accept` | `Authorization: Bearer <token>` | Đội cứu hộ tiếp nhận nhiệm vụ được phân công (không trả data) | Path: `teamId`, `requestId`<br>Query (optional): `note` |
+| `POST` | `/api/v1/assignments/teams/{teamId}/rescue-requests/{requestId}/reject` | `Authorization: Bearer <token>` | Đội cứu hộ từ chối nhiệm vụ được phân công (không trả data) | Path: `teamId`, `requestId`<br>Query (optional): `reason` |
+| `GET` | `/api/v1/assignments/teams/{teamId}/pending` | `Authorization: Bearer <token>` | Lấy danh sách nhiệm vụ được phân công cho đội mà chưa có đội nào nhận (trả về `List<MapPointDetailResponse>`) | Path: `teamId` |
+| `GET` | `/api/v1/assignments/teams/{teamId}/active` | `Authorization: Bearer <token>` | Lấy nhiệm vụ đang thực hiện (ACCEPTED) của đội cứu hộ | Path: `teamId` |
+| `GET` | `/api/v1/assignments/rescue-requests/{requestId}/active` | Public / Rescuer | Lấy phân công đang hoạt động (ACCEPTED) của yêu cầu cứu nạn | Path: `requestId` |
+| `POST` | `/api/v1/assignments/{assignmentId}/complete` | `Authorization: Bearer <token>` | Hoàn thành nhiệm vụ cứu hộ | Path: `assignmentId`<br>Header: `X-User-Id` |
+| `POST` | `/api/v1/assignments/{assignmentId}/cancel` | `Authorization: Bearer <token>` | Hủy nhiệm vụ cứu hộ | Path: `assignmentId`<br>Header: `X-User-Id`<br>Body: `CancelAssignmentRequest` |
 
 ---
 

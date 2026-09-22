@@ -1,38 +1,45 @@
 package iuh.fit.integration.services;
 
-
-import iuh.fit.common.exception.BusinessException;
-import iuh.fit.common.exception.ErrorCode;
-import iuh.fit.integration.dtos.response.NominatimResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import iuh.fit.integration.dtos.response.GoongGeocodeResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class GeocodingService {
-    private final RestTemplate restTemplate;
+    private final RestClient goongRestClient;
+    private final String apiKey;
 
-    public String getAddress(double latitude, double longitude){
-        String url = String.format("https://nominatim.openstreetmap.org/reverse?format=json&lat=%s&lon=%s", latitude, longitude);
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("User-Agent", "DispatchService/1.0 (contact: minhtri084038@gmail.com)");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+    public GeocodingService(
+            RestClient.Builder restClientBuilder,
+            @Value("${goong.base-url:https://rsapi.goong.io}") String baseUrl,
+            @Value("${goong.api-key:}") String apiKey) {
+        this.goongRestClient = restClientBuilder.baseUrl(baseUrl).build();
+        this.apiKey = apiKey;
+    }
 
-        ResponseEntity<NominatimResponse> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                NominatimResponse.class
-        );
-        if(response.getBody() != null && response.getBody().display_name() != null){
-            return response.getBody().display_name();
+    public String getAddress(double latitude, double longitude) {
+        try {
+            GoongGeocodeResponse response = goongRestClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v2/geocode/street")
+                            .queryParam("latlng", latitude + "," + longitude)
+                            .queryParam("has_deprecated_administrative_unit", "true")
+                            .queryParam("api_key", apiKey)
+                            .build())
+                    .retrieve()
+                    .body(GoongGeocodeResponse.class);
+
+            if (response != null && response.results() != null && !response.results().isEmpty()) {
+                return response.results().get(0).formatted_address();
+
+            }
+        } catch (Exception e) {
+            log.error("Error calling Goong Geocoding API for coordinates: ({}, {}). Message: {}",
+                    latitude, longitude, e.getMessage(), e);
         }
-        else new BusinessException(ErrorCode.FORBIDDEN,"Cannot get address from coordinates: " + latitude + ", " + longitude);
-        return null;
+        return "Tọa độ (" + latitude + ", " + longitude + ")";
     }
 }

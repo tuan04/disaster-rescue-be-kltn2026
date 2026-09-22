@@ -21,8 +21,8 @@ public class RouteController {
             @RequestParam Double startLat,
             @RequestParam Double startLng,
             @RequestParam UUID requestId,
-            @RequestParam(required = false, defaultValue = "driving") String profile) {
-        RouteResponse route = routeService.getRoute(startLat, startLng, requestId, profile);
+            @RequestParam(required = false, defaultValue = "car") String vehicle) {
+        RouteResponse route = routeService.getRoute(startLat, startLng, requestId, vehicle);
         return ResponseEntity.ok(ApiResponse.success(route));
     }
 }

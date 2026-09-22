@@ -4,24 +4,32 @@ import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.dispatchservice.dtos.response.RouteResponse;
 import iuh.fit.dispatchservice.entity.RescueRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RouteService {
-    private final RestClient restClient;
+    private final RestClient goongRestClient;
     private final RescueService rescueService;
+    private final String apiKey;
 
-    public RouteResponse getRoute(Double startLat, Double startLng, UUID requestId, String profile) {
-        if (profile == null || profile.trim().isEmpty()) {
-            profile = "driving";
-        }
+    public RouteService(
+            RestClient.Builder restClientBuilder,
+            RescueService rescueService,
+            @Value("${goong.base-url:https://rsapi.goong.io}") String baseUrl,
+            @Value("${goong.api-key:}") String apiKey) {
+        this.goongRestClient = restClientBuilder.baseUrl(baseUrl).build();
+        this.rescueService = rescueService;
+        this.apiKey = apiKey;
+    }
+
+    public RouteResponse getRoute(Double startLat, Double startLng, UUID requestId, String vehicle) {
+        final String finalVehicle = (vehicle == null) ? "car" : vehicle.trim().toLowerCase();
 
         RescueRequest rescueRequest = rescueService.getRescueRequest(requestId);
         if (rescueRequest.getMapPoint() == null || rescueRequest.getMapPoint().getLocation() == null) {
@@ -31,22 +39,23 @@ public class RouteService {
         double endLat = rescueRequest.getMapPoint().getLocation().getY();
         double endLng = rescueRequest.getMapPoint().getLocation().getX();
 
-        String coordinates = startLng + "," + startLat + ";" + endLng + "," + endLat;
-        String finalProfile = profile;
+        String origin = startLat + "," + startLng;
+        String destination = endLat + "," + endLng;
 
         try {
-            return restClient.get()
+            return goongRestClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/route/v1/{profile}/{coordinates}")
-                            .queryParam("overview", "full")
-                            .queryParam("geometries", "geojson")
-                            .queryParam("steps", "true")
-                            .build(finalProfile, coordinates))
+                            .path("/v2/direction")
+                            .queryParam("origin", origin)
+                            .queryParam("destination", destination)
+                            .queryParam("vehicle", finalVehicle)
+                            .queryParam("api_key", apiKey)
+                            .build())
                     .retrieve()
                     .body(RouteResponse.class);
         } catch (Exception e) {
-            log.error("Error calling external OSRM API for profile: {}, coordinates: {}. Message: {}",
-                    finalProfile, coordinates, e.getMessage(), e);
+            log.error("Error calling Goong Directions API for vehicle: {}, origin: {}, destination: {}. Message: {}",
+                    finalVehicle, origin, destination, e.getMessage(), e);
             throw new BusinessException(ErrorCode.BAD_GATEWAY,
                     "Failed to calculate route from external service: " + e.getMessage());
         }

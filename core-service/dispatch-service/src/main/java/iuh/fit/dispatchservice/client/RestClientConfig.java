@@ -8,9 +8,7 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient restClient() {
-        return RestClient.builder()
-                .baseUrl("https://router.project-osrm.org")
-                .build();
+    public RestClient.Builder restClientBuilder() {
+        return RestClient.builder();
     }
 }

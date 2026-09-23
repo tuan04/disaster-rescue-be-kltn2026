@@ -26,6 +26,8 @@ public class RescueEvaluateAIProducer {
     public void publishAIEvaluationNotification(SOSResponse sosResponse) {
         String address = geocodingService.getAddress(sosResponse.latitude(), sosResponse.longitude());
 
+        System.out.println(address);
+
         WeatherContextResponse weatherContext = weatherService.getWeather(sosResponse.latitude(), sosResponse.longitude());
         AiEvaluationResponse aiEvaluation = aiService.evaluateEmergency(sosResponse.content(), weatherContext);
 

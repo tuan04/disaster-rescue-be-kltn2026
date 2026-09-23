@@ -68,3 +68,7 @@ eureka:
   instance:
     prefer-ip-address: true
 
+goong:
+  api-key: ${GOONG_API_KEY:}
+  base-url: ${GOONG_BASE_URL:https://rsapi.goong.io}
+

@@ -1,9 +1,9 @@
 package iuh.fit.dispatchservice.controllers;
 
 
+import iuh.fit.common.kafka.dto.SOSRequest;
 import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.common.response.ApiResponse;
-import iuh.fit.dispatchservice.dtos.request.SOSRequest;
 import iuh.fit.dispatchservice.dtos.request.UpdateSOSRequest;
 import iuh.fit.dispatchservice.services.SOSService;
 import lombok.RequiredArgsConstructor;

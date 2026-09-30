@@ -1,14 +1,27 @@
 package iuh.fit.dispatchservice.dtos.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import iuh.fit.dispatchservice.enums.HazardType;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.UUID;
 
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record RouteResponse(
-        List<RouteDto> routes) {
+        List<RouteDto> routes,
+        List<RouteHazardDto> hazards) {
+
+    @Builder
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record RouteHazardDto(
+            UUID id,
+            HazardType hazardType,
+            Double latitude,
+            Double longitude) {
+    }
+
 
     @Builder
     @JsonIgnoreProperties(ignoreUnknown = true)

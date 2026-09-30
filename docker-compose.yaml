@@ -56,6 +56,25 @@ services:
     networks:
       - sos_network
 
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - sos_network
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: sos_kafka_ui
@@ -73,6 +92,7 @@ volumes:
   postgres_data:
   redis_data:
   kafka_data:
+  n8n_data:
 
 networks:
   sos_network:

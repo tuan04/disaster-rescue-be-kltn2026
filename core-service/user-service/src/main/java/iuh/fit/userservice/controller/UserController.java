@@ -6,9 +6,11 @@ import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
 import iuh.fit.userservice.dto.response.UserProfileResponse;
 import iuh.fit.userservice.service.UserService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,9 +33,12 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserNames()));
     }
 
-    @PatchMapping("/upgrade-rescuer-request")
-    public ResponseEntity<ApiResponse<?>> upgradeToRescuer(@Validated @RequestBody UpgradeRescuerRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequest(request)));
+    @PatchMapping(value = "/upgrade-rescuer-request/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<?>> upgradeToRescuer(
+            @RequestParam("cccdImage") MultipartFile file,
+            @PathVariable("userId") UUID userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequest(userId, file)));
     }
 
     @PatchMapping("/upgrade-rescuer-accept/{id}")

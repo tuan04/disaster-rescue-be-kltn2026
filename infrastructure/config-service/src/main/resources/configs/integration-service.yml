@@ -2,6 +2,10 @@ server:
   port: 8085
 
 spring:
+  grpc:
+    server:
+      port: 9095
+      max-inbound-message-size: 6MB
   mongodb:
     uri: ${MONGO_INTEGRATION_URI}
   ai:

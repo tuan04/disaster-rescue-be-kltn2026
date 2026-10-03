@@ -41,6 +41,7 @@ public class NewsController {
         NewsIngestResponse response = newsService.ingestNews(dtos);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NewsSummaryResponse>>> getNews(
             @RequestParam(defaultValue = "0") int page,
@@ -50,6 +51,7 @@ public class NewsController {
         PageResponse<NewsSummaryResponse> response = newsService.getNews(page, size, keyword);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+    
     @GetMapping("/latest")
     public ResponseEntity<ApiResponse<List<NewsSummaryResponse>>> getLatestNews(
             @RequestParam(defaultValue = "5") int limit

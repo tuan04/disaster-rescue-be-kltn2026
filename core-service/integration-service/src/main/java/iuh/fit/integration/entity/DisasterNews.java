@@ -1,5 +1,6 @@
 package iuh.fit.integration.entity;
 
+import iuh.fit.integration.enums.ContentBlockType;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -24,7 +25,7 @@ public class DisasterNews {
 
     private String summary;
 
-    private String content;
+    private List<NewsContentBlock> content;
 
     @Field("thumbnail_url")
     private String thumbnailUrl;
@@ -39,9 +40,19 @@ public class DisasterNews {
     @Field("published_at")
     private Instant publishedAt;
 
-    private List<String> images;
-
     @Field("created_at")
     @Builder.Default
     private Instant createdAt = Instant.now();
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class NewsContentBlock {
+        private ContentBlockType type;
+        private String text;
+        private String url;
+        private String caption;
+    }
 }

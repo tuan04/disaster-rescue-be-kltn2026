@@ -1,5 +1,6 @@
 package iuh.fit.integration.dtos.response;
 
+import iuh.fit.integration.entity.DisasterNews.NewsContentBlock;
 import lombok.Builder;
 
 import java.time.Instant;
@@ -10,9 +11,8 @@ public record NewsDetailResponse(
         String id,
         String title,
         String summary,
-        String content,
+        List<NewsContentBlock> content,
         String thumbnailUrl,
-        List<String> images,
         String sourceUrl,
         String author,
         Instant publishedAt

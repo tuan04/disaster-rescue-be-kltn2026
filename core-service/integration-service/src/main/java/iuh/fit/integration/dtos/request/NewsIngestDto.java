@@ -1,6 +1,6 @@
 package iuh.fit.integration.dtos.request;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import iuh.fit.integration.entity.DisasterNews.NewsContentBlock;
 import lombok.*;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class NewsIngestDto {
 
     private String summary;
 
-    private String content;
+    private List<NewsContentBlock> content;
 
     private String thumbnailUrl;
 
@@ -25,6 +25,4 @@ public class NewsIngestDto {
     private String author;
 
     private String publishedAt;
-
-    private List<String> images;
 }

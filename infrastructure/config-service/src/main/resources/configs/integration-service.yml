@@ -8,6 +8,7 @@ spring:
       max-inbound-message-size: 6MB
   mongodb:
     uri: ${MONGO_INTEGRATION_URI}
+    auto-index-creation: true
   ai:
     google:
       genai:
@@ -54,3 +55,8 @@ eureka:
 goong:
   api-key: ${GOONG_API_KEY:}
   base-url: ${GOONG_BASE_URL:https://rsapi.goong.io}
+
+n8n:
+  webhook:
+    secret-key: ${N8N_WEBHOOK_SECRET_KEY}
+

@@ -46,7 +46,7 @@ spring:
             - id: integration-service
               uri: lb://INTEGRATION-SERVICE
               predicates:
-                - Path=/api/v1/ai/**, /api/v1/sms/**
+                - Path=/api/v1/ai/**, /api/v1/news/**, /api/v1/sms/**
             - id: notification-service
               uri: lb://NOTIFICATION-SERVICE
               predicates:

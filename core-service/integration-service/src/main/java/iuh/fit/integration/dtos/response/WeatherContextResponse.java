@@ -33,6 +33,6 @@ public class WeatherContextResponse {
     // 7. Áp suất khí quyển (mb) - Dưới 1000 mb là dấu hiệu của tâm bão
     private Double pressureMb;
 
-    // 8. Tổng lượng mưa tích lũy trong ngày (mm) - Đánh giá nguy cơ no nước, sạt lở đất
+    // 8. Tổng lượng mưa dự báo trong ngày (mm), không phải lượng mưa thực đo đến hiện tại
     private Double totalPrecipMm;
 }

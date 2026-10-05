@@ -1,8 +1,12 @@
 package iuh.fit.userservice.service;
 
 import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.request.UserFilterRequest;
 import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
+import iuh.fit.userservice.dto.response.UserListResponse;
 import iuh.fit.userservice.dto.response.UserProfileResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,4 +22,6 @@ public interface UserService {
     UserProfileResponse getUserProfile(UUID userId);
 
     List<UserIDAndNameResponse> getUserNames();
+
+    Page<UserListResponse> getAllUsersPage(UserFilterRequest request, Pageable pageable);
 }

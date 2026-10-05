@@ -1,14 +1,17 @@
 package iuh.fit.userservice.controller;
 
+import org.springframework.data.domain.Page;
 import iuh.fit.common.response.ApiResponse;
-import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.request.UserFilterRequest;
 import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
+import iuh.fit.userservice.dto.response.UserListResponse;
 import iuh.fit.userservice.dto.response.UserProfileResponse;
 import iuh.fit.userservice.service.UserService;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +23,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserController {
     private final UserService userService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<UserListResponse>>> getAllUsersPage(
+            @ModelAttribute UserFilterRequest request,
+            @PageableDefault(page = 0, size = 10) Pageable pageable
+    ){
+        return ResponseEntity.ok(ApiResponse.success(userService.getAllUsersPage(request, pageable)));
+    }
+
+
+
 
     @GetMapping({ "/me", "/profile" })
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(

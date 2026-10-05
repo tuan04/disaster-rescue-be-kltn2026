@@ -49,21 +49,21 @@ public class NotificationServiceImpl implements NotificationService {
                 : DEFAULT_RADIUS_METERS;
 
         // Bước 1: Tìm danh sách userId trong bán kính thảm họa từ Redis GEO
-        List<String> rawUserIds = locationTrackingService.findUsersInRadius(
+        List<String> teamIds = locationTrackingService.findUsersInRadius(
                 event.longitude(),
                 event.latitude(),
                 radius
         );
 
-        System.out.println("Found userIds in radius: " + rawUserIds);
+        System.out.println("Found teamId in radius: " + teamIds);
 
-        if (rawUserIds.isEmpty()) {
+        if (teamIds.isEmpty()) {
             return;
         }
 
         // Bước 2: Parse danh sách String sang UUID và bắt Exception nếu chuỗi UUID không hợp lệ
         List<UUID> validUserIds = new ArrayList<>();
-        for (String rawId : rawUserIds) {
+        for (String rawId : teamIds) {
             validUserIds.add(UUID.fromString(rawId));
         }
 

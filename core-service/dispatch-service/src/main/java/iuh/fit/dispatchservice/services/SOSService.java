@@ -41,8 +41,6 @@ public class SOSService {
                 new Coordinate(sosRequest.getLongitude(), sosRequest.getLatitude())
         );
 
-        System.out.println("SOS Point: " + sosPoint);
-
         Location matchedLocation = locationRepository.findLocationContainingCoordinates(
                 sosRequest.getLongitude(), sosRequest.getLatitude())
                 .orElse(null);

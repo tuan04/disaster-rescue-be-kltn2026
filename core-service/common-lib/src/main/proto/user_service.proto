@@ -26,3 +26,5 @@ message UserInfoGrpcResponse {
     string full_name = 2;
     string phone_number = 3;
 }
+
+

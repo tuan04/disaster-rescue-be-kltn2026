@@ -45,9 +45,6 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
         if (userIds == null || userIds.isEmpty() || message == null) {
             return;
         }
-
-
-
         for (UUID userId : userIds) {
             sendToUser(userId, message);
         }

@@ -38,6 +38,10 @@ public class VolunteerProfile {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+
+    @Column(name = "address", columnDefinition = "TEXT")
+    private String address;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "current_role_in_team", length = 30)
     private RoleInTeamEnum currentRoleInTeam;

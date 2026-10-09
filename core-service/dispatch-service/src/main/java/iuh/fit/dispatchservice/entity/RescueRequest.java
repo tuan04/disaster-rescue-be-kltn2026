@@ -40,9 +40,6 @@ public class RescueRequest {
     @Column(name = "emergency_level")
     private EmergencyLevel emergencyLevel;
 
-    @Column(name = "feed_id")
-    private UUID feedId;
-
     @Column(name = "complete_at")
     private LocalDateTime completeAt;
 

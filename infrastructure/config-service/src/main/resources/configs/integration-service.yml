@@ -2,13 +2,17 @@ server:
   port: 8085
 
 spring:
+
+
   grpc:
     server:
       port: 9095
       max-inbound-message-size: 6MB
   mongodb:
     uri: ${MONGO_INTEGRATION_URI}
-    auto-index-creation: true
+  data:
+    mongodb:
+      auto-index-creation: true
   ai:
     google:
       genai:
@@ -60,3 +64,13 @@ n8n:
   webhook:
     secret-key: ${N8N_WEBHOOK_SECRET_KEY}
 
+social:
+  jobs:
+    # Nghỉ 5 giây sau mỗi lượt xét duyệt.
+    approval-delay-ms: 5000
+
+    # Nghỉ 2 giây sau mỗi lượt gửi outbox.
+    publish-delay-ms: 2000
+
+    # Chờ 10 giây trước lần chạy đầu tiên.
+    initial-delay-ms: 10000

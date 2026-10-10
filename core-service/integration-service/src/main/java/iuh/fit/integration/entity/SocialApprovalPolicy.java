@@ -43,7 +43,6 @@ public record SocialApprovalPolicy(
         Instant enabledSince,
 
 
-
         @Version
         Long version
 

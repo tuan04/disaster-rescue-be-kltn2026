@@ -33,6 +33,11 @@ public class SocialRescueCandidateConsumer {
         // Tránh vô tình chấp nhận object đơn do cấu hình coercion.
         var root = objectMapper.readTree(payload);
 
+
+        System.out.println("Received payload: " + payload);
+
+
+
         if (root == null || !root.isArray()) {
             throw new BusinessException(
                      ErrorCode.BAD_GATEWAY,

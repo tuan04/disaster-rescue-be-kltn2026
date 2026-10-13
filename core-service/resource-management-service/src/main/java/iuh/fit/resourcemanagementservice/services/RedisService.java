@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -105,5 +106,31 @@ public class RedisService {
             return teamLocation;
         }
         return objectMapper.convertValue(value, TeamLocation.class);
+    }
+
+    public void deleteLocation(UUID campaignTeamId) {
+        if (campaignTeamId == null) {
+            return;
+        }
+        String teamIdStr = campaignTeamId.toString();
+        redisTemplate.delete(TEAM_LOCATION_KEY + campaignTeamId);
+        stringRedisTemplate.delete(TEAM_LOCATION_KEY_GIS + campaignTeamId);
+        stringRedisTemplate.opsForGeo().remove(TEAM_LOCATION_KEY_GIS + "all", teamIdStr);
+    }
+
+    /**
+     * Lấy khóa phân tán Redis bằng lệnh nguyên tử SETNX kèm thời gian hết hạn (TTL)
+     */
+    public boolean acquireLock(String key, long timeoutSeconds) {
+        Boolean success = stringRedisTemplate.opsForValue()
+                .setIfAbsent(key, "LOCKED", Duration.ofSeconds(timeoutSeconds));
+        return Boolean.TRUE.equals(success);
+    }
+
+    /**
+     * Giải phóng khóa phân tán Redis
+     */
+    public void releaseLock(String key) {
+        stringRedisTemplate.delete(key);
     }
 }

@@ -1,7 +1,6 @@
 package iuh.fit.resourcemanagementservice.dtos.request;
 
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -10,8 +9,6 @@ import java.util.UUID;
 
 public record UpdateTeamRequest(
 
-        @Min(value = 0, message = "Số lượng thành viên không được âm")
-        Integer totalParticipants,
 
         TeamStatus status,
 

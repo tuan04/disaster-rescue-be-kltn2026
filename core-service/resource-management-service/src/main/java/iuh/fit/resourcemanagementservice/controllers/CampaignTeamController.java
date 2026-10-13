@@ -3,7 +3,10 @@ package iuh.fit.resourcemanagementservice.controllers;
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
 import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
-import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamByAdminRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamByLeaderRequest;
+import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
+import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
@@ -23,14 +26,72 @@ public class CampaignTeamController {
 
     private final CampaignTeamService campaignTeamService;
 
-    /**
-     * API Tạo mới Đội Cứu hộ (Create Campaign Team)
-     */
     @PostMapping
-    public ResponseEntity<ApiResponse<TeamResponse>> createCampaignTeam(
-            @Valid @RequestBody CreateTeamRequest request) {
-        TeamResponse response = campaignTeamService.createTeam(request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Tạo đội cứu hộ mới thành công"));
+    public ResponseEntity<ApiResponse<TeamResponse>> createTeamByLeader(
+            @Valid @RequestBody CreateTeamByLeaderRequest request,
+            @RequestHeader("X-User-Id") UUID leaderId) {
+        TeamResponse response = campaignTeamService.createTeam(
+                request.campaignId(), request.teamName(), request.vehicles(),
+                leaderId, leaderId, TeamApprovalStatus.PENDING);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi yêu cầu thành lập đội"));
+    }
+
+    @PostMapping("/admin")
+    public ResponseEntity<ApiResponse<TeamResponse>> createTeamByAdmin(
+            @Valid @RequestBody CreateTeamByAdminRequest request,
+            @RequestHeader("X-User-Id") UUID adminId) {
+        TeamResponse response = campaignTeamService.createTeam(
+                request.campaignId(), request.teamName(), request.vehicles(),
+                request.leaderId(), adminId, TeamApprovalStatus.APPROVED);
+        return ResponseEntity.ok(ApiResponse.success(response, "Tạo đội cứu hộ thành công"));
+    }
+
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<TeamResponse>> approveTeam(
+            @PathVariable("id") UUID id,
+            @RequestHeader("X-User-Id") UUID reviewerId) {
+        TeamResponse response = campaignTeamService.approveTeam(id, reviewerId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Duyệt yêu cầu thành lập đội thành công"));
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<TeamResponse>> rejectTeam(
+            @PathVariable("id") UUID id,
+            @RequestHeader("X-User-Id") UUID reviewerId,
+            @Valid @RequestBody RejectTeamRequest request) {
+        TeamResponse response = campaignTeamService.rejectTeam(id, reviewerId, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Từ chối yêu cầu thành lập đội thành công"));
+    }
+
+    /**
+     * API Lấy thông tin đội cứu hộ đang hoạt động của Đội trưởng hiện tại
+     */
+    @GetMapping("/my-active")
+    public ResponseEntity<ApiResponse<TeamResponse>> getMyActiveTeam(
+            @RequestHeader(value = "X-User-Id", required = false) UUID leaderId) {
+        TeamResponse response = campaignTeamService.getMyActiveTeam(leaderId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin đội cứu hộ đang hoạt động thành công"));
+    }
+
+    /**
+     * API Lấy chi tiết thông tin Đội Cứu hộ theo ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<TeamResponse>> getTeamById(
+            @PathVariable("id") UUID id) {
+        TeamResponse response = campaignTeamService.getTeamById(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin đội cứu hộ thành công"));
+    }
+
+    /**
+     * API "Off team" (Giải tán / Kết thúc đợt cứu trợ của Đội cứu hộ)
+     */
+    @PostMapping("/{id}/disband")
+    public ResponseEntity<ApiResponse<TeamResponse>> disbandTeam(
+            @PathVariable("id") UUID id,
+            @RequestHeader(value = "X-User-Id", required = false) UUID leaderId) {
+        TeamResponse response = campaignTeamService.disbandTeam(id, leaderId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Giải tán đội cứu hộ thành công"));
     }
 
     /**

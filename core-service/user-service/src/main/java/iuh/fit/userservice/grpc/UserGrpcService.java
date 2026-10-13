@@ -37,6 +37,8 @@ public class UserGrpcService extends UserGrpcServiceGrpc.UserGrpcServiceImplBase
                         .setId(user.getId().toString())
                         .setFullName(user.getFullName() != null ? user.getFullName() : "")
                         .setPhoneNumber(user.getPhone() != null ? user.getPhone() : "")
+                        .setRole(user.getEffectiveRole() != null ? user.getEffectiveRole() : "")
+                        .setAvatarUrl(user.getAvatarUrl() != null ? user.getAvatarUrl() : "")
                         .build())
                 .toList();
 

@@ -2,15 +2,21 @@ package iuh.fit.resourcemanagementservice.entity;
 
 import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
+import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
+import iuh.fit.resourcemanagementservice.enums.MembershipType;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "campaign_members")
+@Table(
+        name = "campaign_members",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_campaign_team_member", columnNames = {"campaign_team_id", "member_id"})
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor
@@ -26,17 +32,22 @@ public class CampaignMember {
     @JoinColumn(name = "campaign_team_id")
     private CampaignTeam campaignTeam;
 
-    @Column(name = "member_id", nullable = false)
+    @Column(name = "member_id")
     private UUID memberId;
-
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_in_team", nullable = false, length = 20)
     private TeamRole roleInTeam;
 
-    @Column(length = 20, nullable = false, unique = true)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "membership_status", nullable = false, length = 20)
+    private MembershipStatus membershipStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "membership_type", nullable = false, length = 20)
+    private MembershipType membershipType;
+
+    @Column(length = 20, nullable = false)
     private String phone;
 
     @Column(name = "full_name", length = 100, nullable = false)
@@ -49,7 +60,6 @@ public class CampaignMember {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -58,6 +68,12 @@ public class CampaignMember {
 
     @PrePersist
     protected void onCreate() {
+        if (membershipStatus == null) {
+            membershipStatus = MembershipStatus.ACCEPTED;
+        }
+        if (membershipType == null) {
+            membershipType = memberId == null ? MembershipType.GUEST : MembershipType.REGISTERED;
+        }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }

@@ -9,11 +9,11 @@ import iuh.fit.resourcemanagementservice.entity.Campaign;
 import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
 import iuh.fit.resourcemanagementservice.repositories.CampaignRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -40,17 +40,21 @@ public class CampaignService {
         return CampaignResponse.fromEntity(savedCampaign);
     }
 
+    public Campaign findById(UUID id) {
+        return campaignRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Không tìm thấy chiến dịch cứu hộ"
+                ));
+    }
+
     /**
      * Cập nhật thông tin chiến dịch theo ID
      */
     @Transactional
     public CampaignResponse updateCampaign(UUID id, UpdateCampaignRequest request) {
 
-        Campaign existingCampaign = campaignRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.RESOURCE_NOT_FOUND, 
-                        "Không tìm thấy chiến dịch với ID: " + id
-                ));
+        Campaign existingCampaign = findById(id);
 
         LocalDate effectiveStartDate = request.getStartDate() != null ? request.getStartDate() : existingCampaign.getStartDate();
         LocalDate effectiveEndDate = request.getEndDate() != null ? request.getEndDate() : existingCampaign.getEndDate();
@@ -78,5 +82,13 @@ public class CampaignService {
         Campaign updatedCampaign = campaignRepository.save(existingCampaign);
 
         return CampaignResponse.fromEntity(updatedCampaign);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CampaignResponse> getActiveCampaigns() {
+        return campaignRepository.findByStatus(CampaignStatus.ACTIVE)
+                .stream()
+                .map(CampaignResponse::fromEntity)
+                .toList();
     }
 }

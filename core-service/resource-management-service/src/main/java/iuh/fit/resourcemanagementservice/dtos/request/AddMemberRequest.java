@@ -1,15 +1,23 @@
 package iuh.fit.resourcemanagementservice.dtos.request;
 
+import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
 public record AddMemberRequest(
-        @NotNull(message = "ID thành viên (memberId) không được để trống")
         UUID memberId,
 
+        @Size(max = 100, message = "Họ tên không được vượt quá 100 ký tự")
+        String fullName,
+
+        String phone,
+
         @NotNull(message = "Vai trò trong đội (roleInTeam) không được để trống")
-        TeamRole roleInTeam
+        TeamRole roleInTeam,
+
+        SexEnum sex
 ) {
 }

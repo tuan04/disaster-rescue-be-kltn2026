@@ -16,9 +16,13 @@ import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import iuh.fit.resourcemanagementservice.repositories.CampaignMemberRepository;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import iuh.fit.resourcemanagementservice.mappers.CampaignMemberMapper;
+import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
+import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
+import iuh.fit.resourcemanagementservice.enums.MembershipType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,15 +41,20 @@ public class CampaignMemberService {
     private final CampaignMemberMapper campaignMemberMapper;
     private final UserGrpcClient userGrpcClient;
 
+    private final TransactionTemplate transactionTemplate;
+
     @Transactional
     public void createLeaderMember(CampaignTeam team, UserInfoGrpcResponse leaderInfo) {
-        CampaignMember leaderMember = campaignMemberMapper.toLeaderMember(
+        CampaignMember leaderMember = campaignMemberMapper.toMember(
                 team,
                 team.getLeaderId(),
-                team.getLeaderPhone(),
                 leaderInfo.getFullName(),
+                team.getLeaderPhone(),
                 leaderInfo.getAvatarUrl(),
-                SexEnum.from(leaderInfo.getSex())
+                SexEnum.from(leaderInfo.getSex()),
+                TeamRole.LEADER,
+                MembershipType.REGISTERED,
+                MembershipStatus.ACCEPTED
         );
         campaignMemberRepository.save(leaderMember);
     }
@@ -66,95 +76,107 @@ public class CampaignMemberService {
         return campaignMemberRepository.existsActiveAcceptedMembership(memberId);
     }
 
-    @Transactional
-    public List<MemberResponse> addMembers(UUID teamId, AddMembersRequest request) {
+    public List<MemberResponse> addMembers(UUID teamId, UUID currentUserId, AddMembersRequest request) {
         CampaignTeam team = findTeamById(teamId);
 
-        if (team.getStatus() == TeamStatus.DISBANDED) {
-            throw new BusinessException(
-                    ErrorCode.CONFLICT,
-                    "Đội cứu hộ đã giải tán, không thể thêm thành viên mới"
-            );
+        if (!team.getLeaderId().equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Chỉ Đội trưởng mới có quyền mời thành viên vào đội");
         }
 
-        Set<UUID> seenMemberIds = new HashSet<>();
-        Set<String> seenGuestPhones = new HashSet<>();
-        List<AddMemberRequest> uniqueRequests = new ArrayList<>();
+        if (team.getStatus() == TeamStatus.DISBANDED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
+        }
+        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ chưa được phê duyệt hoạt động");
+        }
+        if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch cứu hộ không còn hoạt động");
+        }
+
+        Set<UUID> memberIds = new HashSet<>();
+        Set<String> guestPhones = new HashSet<>();
 
         for (AddMemberRequest mReq : request.members()) {
             if (mReq == null) continue;
-
             if (mReq.memberId() != null) {
-                if (!seenMemberIds.add(mReq.memberId())) {
-                    continue;
-                }
+                memberIds.add(mReq.memberId());
             } else {
-                validateGuestMember(teamId, mReq.fullName(), mReq.phone());
-                if (mReq.phone() != null && !mReq.phone().isBlank()) {
-                    String phoneTrimmed = mReq.phone().trim();
-                    if (!seenGuestPhones.add(phoneTrimmed)) {
-                        throw new BusinessException(
-                                ErrorCode.CONFLICT,
-                                "Số điện thoại " + phoneTrimmed + " bị trùng lặp trong danh sách yêu cầu"
-                        );
+                guestPhones.add(mReq.phone().trim());
+            }
+        }
+
+        if (!guestPhones.isEmpty()) {
+            List<String> existingPhones = campaignMemberRepository.findExistingPhonesInTeam(teamId, guestPhones);
+            if (!existingPhones.isEmpty()) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Số điện thoại khách " + String.join(", ", existingPhones) + " đã tồn tại trong đội này");
+            }
+        }
+
+        Map<UUID, CampaignMember> existingMemberMap = Map.of();
+        if (!memberIds.isEmpty()) {
+            List<CampaignMember> existingMembers = campaignMemberRepository.findByCampaignTeam_IdAndMemberIdIn(teamId, memberIds);
+            existingMemberMap = existingMembers.stream().collect(Collectors.toMap(CampaignMember::getMemberId, m -> m));
+
+            for (CampaignMember existing : existingMembers) {
+                if (existing.getMembershipStatus() == MembershipStatus.ACCEPTED) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Người dùng " + existing.getFullName() + " đã là thành viên chính thức của đội");
+                }
+                if (existing.getMembershipStatus() == MembershipStatus.INVITED) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Người dùng " + existing.getFullName() + " đã được mời vào đội và đang chờ phản hồi");
+                }
+            }
+
+            List<UUID> activeAcceptedIds = campaignMemberRepository.findActiveAcceptedMemberIds(memberIds);
+            if (!activeAcceptedIds.isEmpty()) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Thành viên hiện đang tham gia một đội cứu hộ khác đang hoạt động");
+            }
+        }
+
+        Map<UUID, UserInfoGrpcResponse> userMap = memberIds.isEmpty() ? Map.of() : userGrpcClient.getUsersByIds(memberIds);
+
+        for (UUID memberId : memberIds) {
+            UserInfoGrpcResponse userInfo = userMap.get(memberId);
+            if (userInfo == null) {
+                throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin người dùng " + memberId);
+            }
+            if (userInfo.getRole() == null || !userInfo.getRole().equalsIgnoreCase("RESCUER")) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT, "Người dùng " + userInfo.getFullName() + " không phải là cứu hộ viên");
+            }
+        }
+
+        final Map<UUID, CampaignMember> finalExistingMap = existingMemberMap;
+
+        return transactionTemplate.execute(status -> {
+            List<CampaignMember> entitiesToSave = new ArrayList<>();
+
+            for (AddMemberRequest mReq : request.members()) {
+                if (mReq == null) continue;
+                if (mReq.memberId() == null) {
+                    entitiesToSave.add(campaignMemberMapper.toMember(
+                            team, null, mReq.fullName(), mReq.phone(), null, mReq.sex(),
+                            mReq.roleInTeam(), MembershipType.GUEST, MembershipStatus.ACCEPTED
+                    ));
+                } else {
+                    UserInfoGrpcResponse userInfo = userMap.get(mReq.memberId());
+                    CampaignMember existing = finalExistingMap.get(mReq.memberId());
+
+                    if (existing != null) {
+                        entitiesToSave.add(campaignMemberMapper.updateMember(
+                                existing, userInfo.getFullName(), userInfo.getPhoneNumber(), userInfo.getAvatarUrl(),
+                                SexEnum.from(userInfo.getSex()), mReq.roleInTeam(), MembershipStatus.INVITED
+                        ));
+                    } else {
+                        entitiesToSave.add(campaignMemberMapper.toMember(
+                                team, mReq.memberId(), userInfo.getFullName(), userInfo.getPhoneNumber(), userInfo.getAvatarUrl(),
+                                SexEnum.from(userInfo.getSex()), mReq.roleInTeam(), MembershipType.REGISTERED, MembershipStatus.INVITED
+                        ));
                     }
                 }
             }
-            uniqueRequests.add(mReq);
-        }
 
-        Set<UUID> memberIdsToFetch = new HashSet<>();
-        for (AddMemberRequest mReq : uniqueRequests) { 
-            if (mReq.memberId() != null) {
-                if (campaignMemberRepository.existsByCampaignTeam_IdAndMemberId(teamId, mReq.memberId())) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Người dùng đã tồn tại trong đội cứu hộ");
-                }
-                if (hasActiveAcceptedMembership(mReq.memberId())) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Người dùng hiện đang tham gia một đội cứu hộ khác");
-                }
-                memberIdsToFetch.add(mReq.memberId());
-            }
-        }
-
-        Map<UUID, UserInfoGrpcResponse> userMap = memberIdsToFetch.isEmpty()
-                ? Map.of()
-                : userGrpcClient.getUsersByIds(memberIdsToFetch);
-
-        List<CampaignMember> entitiesToSave = new ArrayList<>();
-        for (AddMemberRequest mReq : uniqueRequests) {
-            CampaignMember member = campaignMemberMapper.toEntity(mReq);
-            member.setCampaignTeam(team);
-
-            if (mReq.memberId() != null) {
-                UserInfoGrpcResponse userInfo = userMap.get(mReq.memberId());
-                if (userInfo == null) {
-                    throw new BusinessException(
-                            ErrorCode.RESOURCE_NOT_FOUND,
-                            "Không tìm thấy thông tin người dùng với ID: " + mReq.memberId()
-                    );
-                }
-                member.setFullName(userInfo.getFullName());
-                member.setPhone(userInfo.getPhoneNumber());
-                member.setAvatarUrl(userInfo.getAvatarUrl().isBlank() ? null : userInfo.getAvatarUrl());
-                member.setSex(SexEnum.from(userInfo.getSex()));
-            }
-
-            entitiesToSave.add(member);
-        }
-
-        List<CampaignMember> savedMembers = campaignMemberRepository.saveAll(entitiesToSave);
-        return savedMembers.stream()
-                .map(campaignMemberMapper::toResponse)
-                .toList();
-    }
-
-    private void validateGuestMember(UUID teamId, String fullName, String phone) {
-        if (fullName == null || fullName.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Vui lòng nhập họ tên cho thành viên đi cùng");
-        }
-        if (phone != null && !phone.isBlank() && campaignMemberRepository.existsByCampaignTeam_IdAndPhone(teamId, phone.trim())) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Số điện thoại " + phone.trim() + " đã tồn tại trong đội cứu hộ này");
-        }
+            List<CampaignMember> savedMembers = campaignMemberRepository.saveAll(entitiesToSave);
+            return savedMembers.stream().map(campaignMemberMapper::toResponse).toList();
+        });
     }
 
     @Transactional

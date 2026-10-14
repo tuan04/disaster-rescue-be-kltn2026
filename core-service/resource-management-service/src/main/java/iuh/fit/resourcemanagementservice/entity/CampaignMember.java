@@ -68,11 +68,11 @@ public class CampaignMember {
 
     @PrePersist
     protected void onCreate() {
-        if (membershipStatus == null) {
-            membershipStatus = MembershipStatus.ACCEPTED;
-        }
         if (membershipType == null) {
             membershipType = memberId == null ? MembershipType.GUEST : MembershipType.REGISTERED;
+        }
+        if (membershipStatus == null) {
+            membershipStatus = memberId == null ? MembershipStatus.ACCEPTED : MembershipStatus.INVITED;
         }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();

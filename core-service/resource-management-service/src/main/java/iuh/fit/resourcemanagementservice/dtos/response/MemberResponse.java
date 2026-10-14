@@ -1,6 +1,8 @@
 package iuh.fit.resourcemanagementservice.dtos.response;
 
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
+import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
+import iuh.fit.resourcemanagementservice.enums.MembershipType;
 import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 
@@ -13,9 +15,12 @@ public record MemberResponse(
         String fullName,
         String phone,
         TeamRole roleInTeam,
+        MembershipStatus membershipStatus,
+        MembershipType membershipType,
         SexEnum sex,
         String avatarUrl,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime modifiedAt
 ) {
     public static MemberResponse fromEntity(CampaignMember member) {
         return new MemberResponse(
@@ -24,9 +29,12 @@ public record MemberResponse(
                 member.getFullName(),
                 member.getPhone(),
                 member.getRoleInTeam(),
+                member.getMembershipStatus(),
+                member.getMembershipType(),
                 member.getSex(),
                 member.getAvatarUrl(),
-                member.getCreatedAt()
+                member.getCreatedAt(),
+                member.getModifiedAt()
         );
     }
 }

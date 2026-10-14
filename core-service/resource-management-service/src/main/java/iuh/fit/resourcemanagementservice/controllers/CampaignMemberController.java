@@ -37,10 +37,12 @@ public class CampaignMemberController {
     @PostMapping
     public ResponseEntity<ApiResponse<List<MemberResponse>>> addMembers(
             @PathVariable("teamId") UUID teamId,
+            @RequestHeader("X-User-Id") UUID currentUserId,
             @Valid @RequestBody AddMembersRequest request
     ) {
-        List<MemberResponse> response = campaignMemberService.addMembers(teamId, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thêm danh sách thành viên vào đội cứu hộ thành công"));
+        List<MemberResponse> response = campaignMemberService.addMembers(teamId, currentUserId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Đã gửi lời mời tham gia đội"));
     }
 
     /**

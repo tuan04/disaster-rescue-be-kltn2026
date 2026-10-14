@@ -1,60 +1,63 @@
 package iuh.fit.resourcemanagementservice.mappers;
 
-import iuh.fit.resourcemanagementservice.dtos.request.AddMemberRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
+import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
+import iuh.fit.resourcemanagementservice.enums.MembershipType;
 import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Mapper(componentModel = "spring", imports = {LocalDateTime.class, TeamRole.class})
+@Mapper(componentModel = "spring")
 public interface CampaignMemberMapper {
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "campaignTeam", ignore = true)
-    @Mapping(target = "avatarUrl", ignore = true)
-    @Mapping(target = "modifiedAt", ignore = true)
-    @Mapping(target = "createdAt", expression = "java(LocalDateTime.now())")
-    @Mapping(target = "fullName", source = "fullName", qualifiedByName = "trimOrFallback")
-    @Mapping(target = "phone", source = "phone", qualifiedByName = "trimString")
-    @Mapping(target = "roleInTeam", source = "roleInTeam", defaultExpression = "java(TeamRole.MEMBER)")
-    @Mapping(target = "membershipStatus", ignore = true)
-    @Mapping(target = "membershipType", ignore = true)
-    CampaignMember toEntity(AddMemberRequest request);
 
     MemberResponse toResponse(CampaignMember member);
 
-    default CampaignMember toLeaderMember(CampaignTeam team, java.util.UUID leaderId, String phone, String fullName, String avatarUrl, SexEnum sex) {
+    default CampaignMember toMember(
+            CampaignTeam team,
+            UUID memberId,
+            String fullName,
+            String phone,
+            String avatarUrl,
+            SexEnum sex,
+            TeamRole roleInTeam,
+            MembershipType membershipType,
+            MembershipStatus membershipStatus
+    ) {
         return CampaignMember.builder()
                 .campaignTeam(team)
-                .memberId(leaderId)
-                .phone(phone != null ? phone.trim() : null)
+                .memberId(memberId)
                 .fullName(fullName != null ? fullName.trim() : null)
+                .phone(phone != null ? phone.trim() : null)
                 .avatarUrl(avatarUrl != null && !avatarUrl.isBlank() ? avatarUrl : null)
-                .roleInTeam(TeamRole.LEADER)
                 .sex(sex)
+                .roleInTeam(roleInTeam != null ? roleInTeam : TeamRole.MEMBER)
+                .membershipType(membershipType != null ? membershipType : (memberId == null ? MembershipType.GUEST : MembershipType.REGISTERED))
+                .membershipStatus(membershipStatus != null ? membershipStatus : (memberId == null ? MembershipStatus.ACCEPTED : MembershipStatus.INVITED))
                 .createdAt(LocalDateTime.now())
                 .build();
     }
 
-    @Named("trimOrFallback")
-    default String trimOrFallback(String value) {
-        if (value == null || value.isBlank()) {
-            return "Thành viên";
-        }
-        return value.trim();
-    }
-
-    @Named("trimString")
-    default String trimString(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
+    default CampaignMember updateMember(
+            CampaignMember existing,
+            String fullName,
+            String phone,
+            String avatarUrl,
+            SexEnum sex,
+            TeamRole roleInTeam,
+            MembershipStatus membershipStatus
+    ) {
+        existing.setFullName(fullName != null ? fullName.trim() : existing.getFullName());
+        existing.setPhone(phone != null ? phone.trim() : existing.getPhone());
+        existing.setAvatarUrl(avatarUrl != null && !avatarUrl.isBlank() ? avatarUrl : null);
+        existing.setSex(sex);
+        existing.setRoleInTeam(roleInTeam != null ? roleInTeam : TeamRole.MEMBER);
+        existing.setMembershipStatus(membershipStatus != null ? membershipStatus : existing.getMembershipStatus());
+        existing.setModifiedAt(LocalDateTime.now());
+        return existing;
     }
 }

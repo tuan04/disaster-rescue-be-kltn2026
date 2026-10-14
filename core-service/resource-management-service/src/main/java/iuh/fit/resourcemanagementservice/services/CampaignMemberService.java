@@ -9,6 +9,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.AddMembersRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
+import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
@@ -42,7 +43,8 @@ public class CampaignMemberService {
                 team.getLeaderId(),
                 team.getLeaderPhone(),
                 leaderInfo.getFullName(),
-                leaderInfo.getAvatarUrl()
+                leaderInfo.getAvatarUrl(),
+                SexEnum.from(leaderInfo.getSex())
         );
         campaignMemberRepository.save(leaderMember);
     }
@@ -134,6 +136,7 @@ public class CampaignMemberService {
                 member.setFullName(userInfo.getFullName());
                 member.setPhone(userInfo.getPhoneNumber());
                 member.setAvatarUrl(userInfo.getAvatarUrl().isBlank() ? null : userInfo.getAvatarUrl());
+                member.setSex(SexEnum.from(userInfo.getSex()));
             }
 
             entitiesToSave.add(member);

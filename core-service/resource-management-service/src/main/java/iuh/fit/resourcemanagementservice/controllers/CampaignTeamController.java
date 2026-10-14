@@ -13,6 +13,7 @@ import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.services.CampaignTeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,8 @@ public class CampaignTeamController {
         TeamResponse response = campaignTeamService.createTeam(
                 request.campaignId(), request.teamName(), request.vehicles(),
                 leaderId, leaderId, TeamApprovalStatus.PENDING);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi yêu cầu thành lập đội"));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Đã gửi yêu cầu thành lập đội"));
     }
 
     @PostMapping("/admin")
@@ -43,7 +45,8 @@ public class CampaignTeamController {
         TeamResponse response = campaignTeamService.createTeam(
                 request.campaignId(), request.teamName(), request.vehicles(),
                 request.leaderId(), adminId, TeamApprovalStatus.APPROVED);
-        return ResponseEntity.ok(ApiResponse.success(response, "Tạo đội cứu hộ thành công"));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Tạo đội cứu hộ thành công"));
     }
 
     @PostMapping("/{id}/approve")

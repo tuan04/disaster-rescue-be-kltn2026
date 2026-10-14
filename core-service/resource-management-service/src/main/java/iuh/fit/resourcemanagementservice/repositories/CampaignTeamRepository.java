@@ -39,5 +39,6 @@ public interface CampaignTeamRepository extends JpaRepository<CampaignTeam, UUID
 
     List<CampaignTeam> findByIdInAndStatus(List<UUID> ids, TeamStatus status);
 
-
+    boolean existsByCampaign_IdAndTeamNameIgnoreCaseAndStatusNotAndApprovalStatusNot(
+            UUID campaignId, String teamName, TeamStatus status, TeamApprovalStatus approvalStatus);
 }

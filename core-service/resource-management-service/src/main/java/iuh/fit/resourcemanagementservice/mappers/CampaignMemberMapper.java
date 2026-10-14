@@ -4,6 +4,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.AddMemberRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
+import iuh.fit.resourcemanagementservice.enums.SexEnum;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -28,7 +29,7 @@ public interface CampaignMemberMapper {
 
     MemberResponse toResponse(CampaignMember member);
 
-    default CampaignMember toLeaderMember(CampaignTeam team, java.util.UUID leaderId, String phone, String fullName, String avatarUrl) {
+    default CampaignMember toLeaderMember(CampaignTeam team, java.util.UUID leaderId, String phone, String fullName, String avatarUrl, SexEnum sex) {
         return CampaignMember.builder()
                 .campaignTeam(team)
                 .memberId(leaderId)
@@ -36,6 +37,7 @@ public interface CampaignMemberMapper {
                 .fullName(fullName != null ? fullName.trim() : null)
                 .avatarUrl(avatarUrl != null && !avatarUrl.isBlank() ? avatarUrl : null)
                 .roleInTeam(TeamRole.LEADER)
+                .sex(sex)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

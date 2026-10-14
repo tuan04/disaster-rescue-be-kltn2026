@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import iuh.fit.common.grpc.UserInfoGrpcResponse;
 import iuh.fit.resourcemanagementservice.client.UserGrpcClient;
@@ -45,20 +46,19 @@ public class CampaignTeamService {
     private final UserGrpcClient userGrpcClient;
     private final RedisService redisService;
     private final LocationEventProducer locationEventProducer;
+    private final TransactionTemplate transactionTemplate;
 
     public CampaignTeam findById(UUID campaignTeamID) {
         return campaignTeamRepository.findById(campaignTeamID).orElseThrow(() ->
                 new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy đội cứu hộ cho với ID: " + campaignTeamID));
     }
 
-    @Transactional
     public TeamResponse createTeam(UUID campaignId, String teamName, List<String> vehicles,
             UUID leaderId, UUID creatorId, TeamApprovalStatus initialApprovalStatus) {
         if (creatorId == null || leaderId == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Thiếu thông tin người tạo hoặc trưởng đội");
         }
 
-        // Lấy khóa phân tán Redis theo leaderId (khóa 10s để chống click đúp / spam thao tác)
         String lockKey = "lock:team:create:" + leaderId;
         boolean acquired = redisService.acquireLock(lockKey, 10);
         if (!acquired) {
@@ -71,10 +71,15 @@ public class CampaignTeamService {
                 throw new BusinessException(ErrorCode.INVALID_INPUT, "Chiến dịch cứu hộ đã kết thúc");
             }
 
+            if (campaignTeamRepository.existsByCampaign_IdAndTeamNameIgnoreCaseAndStatusNotAndApprovalStatusNot(
+                    campaignId, teamName, TeamStatus.DISBANDED, TeamApprovalStatus.REJECTED)) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Tên đội cứu hộ đã tồn tại");
+            }
+
             if (campaignMemberService.hasActiveAcceptedMembership(leaderId)) {
                 throw new BusinessException(ErrorCode.CONFLICT, "Người dùng hiện đang tham gia một đội cứu hộ khác");
             }
-            
+
             UserInfoGrpcResponse leaderInfo = userGrpcClient.getUserById(leaderId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin đội trưởng"));
 
@@ -82,23 +87,25 @@ public class CampaignTeamService {
                 throw new BusinessException(ErrorCode.INVALID_INPUT, "Người được chọn làm Đội trưởng phải là Người cứu hộ");
             }
 
-            CampaignTeam team = CampaignTeam.builder()
-                    .campaign(campaign)
+            return transactionTemplate.execute(status -> {
+                CampaignTeam team = CampaignTeam.builder()
+                        .campaign(campaign)
                     .teamName(teamName == null ? null : teamName.trim())
-                    .vehicles(vehicles == null ? new ArrayList<>() : new ArrayList<>(vehicles))
-                    .leaderId(leaderId)
-                    .leaderPhone(leaderInfo.getPhoneNumber())
-                    .approvalStatus(initialApprovalStatus)
-                    .build();
-            if (initialApprovalStatus == TeamApprovalStatus.APPROVED) {
-                team.setReviewedBy(creatorId);
-                team.setReviewedAt(LocalDateTime.now());
-            }
-            CampaignTeam savedTeam = campaignTeamRepository.save(team);
+                        .vehicles(vehicles == null ? new ArrayList<>() : new ArrayList<>(vehicles))
+                        .leaderId(leaderId)
+                        .leaderPhone(leaderInfo.getPhoneNumber())
+                        .approvalStatus(initialApprovalStatus)
+                        .build();
 
-            campaignMemberService.createLeaderMember(savedTeam, leaderInfo);
-
-            return campaignTeamMapper.toResponse(savedTeam);
+                if (initialApprovalStatus == TeamApprovalStatus.APPROVED) {
+                    team.setReviewedBy(creatorId);
+                    team.setReviewedAt(LocalDateTime.now());
+                }
+                CampaignTeam savedTeam = campaignTeamRepository.save(team);
+                campaignMemberService.createLeaderMember(savedTeam, leaderInfo);
+                
+                return campaignTeamMapper.toResponse(savedTeam);
+            });
         } catch (DataIntegrityViolationException ex) {
             throw new BusinessException(ErrorCode.CONFLICT, "Người dùng hiện đang hoạt động trong một đội cứu hộ khác");
         } finally {

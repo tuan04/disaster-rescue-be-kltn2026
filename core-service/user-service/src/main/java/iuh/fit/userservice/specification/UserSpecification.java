@@ -47,6 +47,13 @@ public final class UserSpecification {
                 ));
             }
 
+            if (request.getRole() != null) {
+                predicates.add(cb.equal(
+                        root.get("role"),
+                        request.getRole()
+                ));
+            }
+
             if (request.getCurrentRoleInTeam() != null) {
                 predicates.add(cb.equal(
                         profile.get("currentRoleInTeam"),

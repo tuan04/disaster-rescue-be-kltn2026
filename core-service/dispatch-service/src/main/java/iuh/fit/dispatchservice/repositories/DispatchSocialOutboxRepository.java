@@ -23,9 +23,7 @@ public interface DispatchSocialOutboxRepository extends JpaRepository<DispatchSo
             ORDER BY o.publishNextAt ASC, o.eventId ASC
             """)
     List<DispatchSocialOutbox> findDue(
-            // Chỉ lấy những sự kiện đã đến hạn ở thời điểm này.
             @Param("now") Instant now,
-            // Pageable giới hạn số bản ghi, không phải tham số trong JPQL.
             Pageable pageable
     );
 
@@ -61,16 +59,10 @@ public interface DispatchSocialOutboxRepository extends JpaRepository<DispatchSo
               AND o.publishNextAt = :observedNextAt
             """)
     int deferPublish(
-            // Xác định sự kiện vừa gửi lỗi.
             @Param("eventId") UUID eventId,
-
             // Giá trị publishNextAt tại thời điểm worker đọc bản ghi.
             @Param("observedNextAt") Instant observedNextAt,
-
-            // Thời điểm sớm nhất được phép gửi lại.
             @Param("nextAttemptAt") Instant nextAttemptAt,
-
-            // Lưu loại lỗi của lần gửi.
             @Param("errorCode") String errorCode
     );
 

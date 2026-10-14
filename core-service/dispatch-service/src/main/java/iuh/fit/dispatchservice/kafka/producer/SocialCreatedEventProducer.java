@@ -20,13 +20,10 @@ import java.util.concurrent.TimeoutException;
 
 @Component
 public class SocialCreatedEventProducer {
-    // Factory riêng của luồng gửi kết quả social.
     private final DefaultKafkaProducerFactory<String, String> producerFactory;
 
-    // Template sử dụng StringSerializer cho cả key và value.
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    // Spring inject factory gốc để lấy cấu hình kết nối Kafka.
     public SocialCreatedEventProducer(
             @Qualifier("kafkaProducerFactory")
             ProducerFactory<?, ?> existingProducerFactory
@@ -90,46 +87,35 @@ public class SocialCreatedEventProducer {
         this.kafkaTemplate = new KafkaTemplate<>(producerFactory);
     }
 
-    // Chỉ hoàn thành bình thường khi Kafka xác nhận gửi thành công.
+
     public void sendAndWait(
             String topic,
             String messageKey,
             String payload
     ) throws InterruptedException, ExecutionException, TimeoutException {
 
-        // Bảng outbox này chỉ phục vụ sự kiện social-rescue-created.
-        // Dữ liệu sai topic phải báo lỗi để giữ lại và xử lý.
         if (!SocialEvents.CREATED_TOPIC.equals(topic)) {
             throw new IllegalArgumentException("OUTBOX_TOPIC_INVALID");
         }
 
-        // Không gửi nếu thiếu externalId dùng làm key.
         if (!StringUtils.hasText(messageKey)) {
             throw new IllegalArgumentException("OUTBOX_KEY_MISSING");
         }
 
-        // Không gửi nếu thiếu JSON sự kiện.
         if (!StringUtils.hasText(payload)) {
             throw new IllegalArgumentException("OUTBOX_PAYLOAD_MISSING");
         }
 
-        // Gửi nguyên dữ liệu đã lưu trong outbox.
         kafkaTemplate.send(topic, messageKey, payload)
-
-                // Đợi kết quả với thời gian giới hạn.
-                // Lỗi hoặc timeout sẽ được chuyển cho publisher xử lý.
                 .get(35, TimeUnit.SECONDS);
     }
 
-    // Giải phóng tài nguyên khi ứng dụng đóng bình thường.
     @PreDestroy
     public void close() {
 
         try {
-            // Đóng tài nguyên của template.
             kafkaTemplate.destroy();
         } finally {
-            // Factory được tự tạo nên cần tự đóng.
             producerFactory.destroy();
         }
     }

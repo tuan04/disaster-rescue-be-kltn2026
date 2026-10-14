@@ -17,10 +17,8 @@ import java.util.concurrent.TimeoutException;
 @RequiredArgsConstructor
 @Slf4j
 public class SocialOutboxPublisher {
-    // Mỗi lượt đọc tối đa 20 sự kiện để giới hạn lượng công việc.
     private static final int BATCH_SIZE = 20;
 
-    // Lần gửi lỗi sẽ được thử lại sớm nhất sau 10 giây.
     private static final long RETRY_DELAY_SECONDS = 10;
 
     private final SocialFeedStateRepository stateRepository;
@@ -108,9 +106,6 @@ public class SocialOutboxPublisher {
                 continue;
             }
 
-            // Chỉ chạy đến đây nếu sendAndWait() hoàn thành thành công.
-            // Đặt thao tác MongoDB ngoài khối catch lỗi gửi Kafka:
-            // Kafka thành công nhưng MongoDB lỗi là hai tình huống khác nhau.
             boolean updated = stateRepository.markPublished(
                     feed,
                     Instant.now()

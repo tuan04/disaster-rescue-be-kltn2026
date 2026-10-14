@@ -14,14 +14,10 @@ public class DispatchSocialSchedulingConfig {
 
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 
-        // Hiện tại chỉ có một tác vụ gửi outbox nên dùng một thread.
         scheduler.setPoolSize(1);
 
-        // Giúp nhận diện thread của tác vụ này trong log.
         scheduler.setThreadNamePrefix("dispatch-social-outbox-");
 
-        // Spring tự khởi tạo scheduler sau khi đăng ký bean.
-        // Không cần gọi initialize() thủ công.
         return scheduler;
     }
 }

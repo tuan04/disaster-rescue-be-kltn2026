@@ -20,6 +20,9 @@ public class SocialRawFeedService {
             SocialRawFeedFilterRequest request,
             Pageable pageable
     ) {
+
+        System.out.println("request: " + request);
+
         Sort sort = Sort.by(
                 Sort.Order.desc("receivedAt"),
                 Sort.Order.desc("id")

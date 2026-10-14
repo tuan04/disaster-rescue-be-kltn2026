@@ -24,22 +24,15 @@ public class SocialApprovedConsumer {
     private final SocialRescueDispatchService dispatchService;
 
     @KafkaListener(
-            // Giá trị hiện tại: social-rescue-approved.
             topics = SocialEvents.APPROVED_TOPIC,
-
-            // Group riêng của dispatch cho luồng này.
             groupId = "dispatch-social-rescue-group",
-
-            // Dùng cấu hình String deserializer, commit và retry ở trên.
             containerFactory = "socialApprovedKafkaListenerContainerFactory"
     )
-
     public void onApproved(ConsumerRecord<String, String> record) {
         // Đọc nguyên chuỗi JSON từ Kafka.
         // Nhận ConsumerRecord giúp xử lý rõ cả trường hợp value = null.
         String payload = record.value();
 
-        // Message rỗng không phải một sự kiện Approved hợp lệ.
         if (!StringUtils.hasText(payload)) {
             throw new BusinessException(
                     ErrorCode.INVALID_INPUT,

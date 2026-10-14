@@ -9,6 +9,7 @@ import iuh.fit.notificationservice.dtos.PageResponse;
 import iuh.fit.notificationservice.entity.Notification;
 import iuh.fit.notificationservice.entity.UserNotification;
 import iuh.fit.notificationservice.redis.LocationTrackingService;
+import iuh.fit.notificationservice.redis.TeamRecipientService;
 import iuh.fit.notificationservice.repositories.NotificationRepository;
 import iuh.fit.notificationservice.repositories.UserNotificationRepository;
 import iuh.fit.notificationservice.services.NotificationService;
@@ -36,6 +37,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserNotificationRepository userNotificationRepository;
     private final WebSocketNotificationService webSocketNotificationService;
 
+    private final TeamRecipientService teamRecipientService;
+
     @Override
     @Transactional
     public void processSOSEvent(SOSResponse event) {
@@ -48,12 +51,14 @@ public class NotificationServiceImpl implements NotificationService {
                 ? event.radiusMeters()
                 : DEFAULT_RADIUS_METERS;
 
-        // Bước 1: Tìm danh sách userId trong bán kính thảm họa từ Redis GEO
-        List<String> teamIds = locationTrackingService.findUsersInRadius(
+        // Bước 1: Tìm danh sách teamIds trong bán kính thảm họa từ Redis GEO
+        List<UUID> teamIds = locationTrackingService.findTeamsInRadius(
                 event.longitude(),
                 event.latitude(),
                 radius
-        );
+        ).stream()
+                .map(UUID::fromString)
+                .toList();
 
         System.out.println("Found teamId in radius: " + teamIds);
 
@@ -61,11 +66,7 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        // Bước 2: Parse danh sách String sang UUID và bắt Exception nếu chuỗi UUID không hợp lệ
-        List<UUID> validUserIds = new ArrayList<>();
-        for (String rawId : teamIds) {
-            validUserIds.add(UUID.fromString(rawId));
-        }
+        List<UUID> validUserIds = teamRecipientService.findUserIdsByTeamIds(teamIds);
 
         if (validUserIds.isEmpty()) {
             return;
@@ -96,10 +97,6 @@ public class NotificationServiceImpl implements NotificationService {
                         .build())
                 .toList();
 
-        // Bước 5: Lưu toàn bộ danh sách UserNotification xuống Database (Batch Insert)
-        userNotificationRepository.saveAll(userNotifications);
-
-        // Bước 6: Gửi thông báo thời gian thực qua WebSocket đến tất cả user trong danh sách
         NotificationSocketMessage socketMessage = NotificationSocketMessage.builder()
                 .id(savedNotification.getId())
                 .referenceId(savedNotification.getReferenceId())
@@ -113,7 +110,12 @@ public class NotificationServiceImpl implements NotificationService {
                 .reporterPhone(event.reporterPhone())
                 .build();
 
-        webSocketNotificationService.sendToUsers(validUserIds, socketMessage);
+        webSocketNotificationService.sendToUsers(
+                teamIds,
+                 socketMessage
+        );
+
+        userNotificationRepository.saveAll(userNotifications);
     }
 
     @Override

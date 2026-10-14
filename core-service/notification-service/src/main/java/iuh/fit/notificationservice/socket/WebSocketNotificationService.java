@@ -14,12 +14,7 @@ public interface WebSocketNotificationService {
      */
     void sendToUser(UUID userId, NotificationSocketMessage message);
 
-    /**
-     * Gửi thông báo đến danh sách nhiều người dùng (tất cả user lấy ra từ Redis)
-     *
-     * @param userIds Danh sách ID người nhận
-     * @param message Dữ liệu thông báo
-     */
+
     void sendToUsers(List<UUID> userIds, NotificationSocketMessage message);
 
     /**

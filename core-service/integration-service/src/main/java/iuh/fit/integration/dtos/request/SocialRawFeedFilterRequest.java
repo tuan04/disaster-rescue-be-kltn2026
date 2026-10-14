@@ -2,11 +2,11 @@ package iuh.fit.integration.dtos.request;
 
 import iuh.fit.integration.enums.FeedStatus;
 import iuh.fit.integration.enums.SourcePlatform;
-import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
-
+import lombok.Setter;
 
 @Getter
+@Setter
 public class SocialRawFeedFilterRequest {
     private SourcePlatform sourcePlatform;
 

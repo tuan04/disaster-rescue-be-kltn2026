@@ -13,10 +13,9 @@ import java.util.UUID;
 
 
 public interface SocialRescueReceiptRepository  extends Repository<SocialRescueReceipt, String> {
-    // Đây là INSERT, không phải SELECT.
+
     @Modifying
     @Transactional(propagation = Propagation.MANDATORY)
-    // nativeQuery cho phép dùng cú pháp ON CONFLICT của PostgreSQL.
     @Query(
             value = """
                     INSERT INTO social_rescue_receipts (
@@ -33,7 +32,7 @@ public interface SocialRescueReceiptRepository  extends Repository<SocialRescueR
                     """,
             nativeQuery = true
     )
-    int TryRegister(
+    int tryRegister(
             @Param("externalId") String externalId,
             @Param("approvalEventId") UUID approvalEventId,
             @Param("receivedAt") Instant receivedAt
@@ -52,7 +51,7 @@ public interface SocialRescueReceiptRepository  extends Repository<SocialRescueR
                     """,
             nativeQuery = true
     )
-    int AttachRescueRequest(
+    int attachRescueRequest(
             @Param("externalId") String externalId,
             @Param("approvalEventId") UUID approvalEventId,
             @Param("rescueRequestId") UUID rescueRequestId

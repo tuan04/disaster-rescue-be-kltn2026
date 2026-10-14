@@ -22,14 +22,8 @@ public interface SocialRawFeedRepository extends MongoRepository<SocialRawFeed, 
             }
             """)
     List<SocialRawFeed> findDuePendingFeeds(
-            // Tham số ?0: thời điểm bắt đầu áp dụng tự duyệt.
             Instant enabledSince,
-
-            // Tham số ?1: thời điểm của lượt kiểm tra.
             Instant now,
-
-            // Giới hạn số bản ghi và cách sắp xếp.
-            // Đây là tham số đặc biệt do Spring Data xử lý.
             Pageable pageable
     );
 }

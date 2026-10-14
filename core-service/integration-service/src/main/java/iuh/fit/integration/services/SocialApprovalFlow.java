@@ -39,56 +39,10 @@ public class SocialApprovalFlow {
     private final Validator validator;
     private final SocialFeedStateRepository stateRepository;
 
-
-    public List<FeedInspection> inspectPendingFeeds() {
-
-        var policy = policyService.getPolicy();
-
-
-        if (!Boolean.TRUE.equals(policy.enabled())) {
-            return List.of();
-        }
-
-        Instant now = Instant.now();
-
-
-         Pageable pageRequest = PageRequest.of(
-                0,
-                BATCH_SIZE,
-                Sort.by(
-                        Sort.Order.asc("autoNextCheckAt"),
-                        Sort.Order.asc("id")
-                )
-        );
-
-        List<SocialRawFeed> feeds = feedRepository.findDuePendingFeeds(
-                policy.enabledSince(),
-                now,
-                pageRequest
-        );
-
-
-        List<FeedInspection> results = new ArrayList<>(feeds.size());
-
-        for (SocialRawFeed feed : feeds) {
-            FeedInspection result = inspectFeed(
-                    feed,
-                    policy.minConfidence()
-            );
-            results.add(result);
-        }
-
-        return List.copyOf(results);
-    }
-
-
     private FeedInspection inspectFeed(
             SocialRawFeed feed,
             double minConfidence
     ) {
-        if (feed.getSourcePlatform() != SourcePlatform.FACEBOOK) {
-            return notEligible(feed, "UNSUPPORTED_SOURCE");
-        }
 
         var extractedData = feed.getExtractedData();
 
@@ -203,7 +157,6 @@ public class SocialApprovalFlow {
 
         int approvedCount = 0;
 
-        // Xử lý từng feed trong danh sách.
         for (SocialRawFeed feed : feeds) {
 
             // Tái sử dụng toàn bộ logic kiểm tra của phần trước.

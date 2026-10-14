@@ -7,6 +7,8 @@ option java_multiple_files = true;
 service ResourceTeamGrpcService {
     rpc GetTeamByLeaderId (GetTeamByLeaderRequest) returns (TeamInfoResponse);
     rpc IsLeaderOfTeam (IsLeaderOfTeamRequest) returns (IsLeaderOfTeamResponse);
+    rpc GetNotificationRecipientsByTeamIds (GetNotificationRecipientsByTeamIdsRequest)
+        returns (GetNotificationRecipientsByTeamIdsResponse);
 }
 
 message GetTeamByLeaderRequest {
@@ -26,4 +28,18 @@ message IsLeaderOfTeamRequest {
 
 message IsLeaderOfTeamResponse {
     bool is_leader = 1;
+}
+
+message GetNotificationRecipientsByTeamIdsRequest {
+    repeated string team_ids = 1;
+}
+
+message TeamNotificationRecipients {
+    string team_id = 1;
+    repeated string user_ids = 2;
+    bool team_exists = 3;
+}
+
+message GetNotificationRecipientsByTeamIdsResponse {
+    repeated TeamNotificationRecipients teams = 1;
 }

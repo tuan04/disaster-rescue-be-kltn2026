@@ -132,8 +132,7 @@ public class SocialFeedStateRepository {
         return result.getModifiedCount() == 1;
     }
 
-    // Đọc một nhóm outbox đã đến thời gian gửi.
-    // Hàm này chỉ đọc dữ liệu, chưa thay đổi trạng thái.
+
     public List<SocialRawFeed> findDueOutbox(
             Instant now,
             int batchSize
@@ -223,13 +222,8 @@ public class SocialFeedStateRepository {
 
 
     // Ghi nhận kết quả dispatch đã tạo yêu cầu cứu hộ.
-    // Service phải validate event trước khi gọi method này.
     public boolean markDispatchCreated(SocialEvents.Created event) {
-
-        // Entity MongoDB đang lưu UUID dưới dạng String.
         String approvalEventId = event.approvalEventId().toString();
-
-        // ID yêu cầu cứu hộ nằm trong rescue.id(), không phải event.eventId().
         String rescueRequestId = event.rescue().id().toString();
 
         // Trường hợp nhận kết quả lần đầu:
@@ -246,19 +240,15 @@ public class SocialFeedStateRepository {
                 .and("rescueRequestId")
                 .is(rescueRequestId);
 
-        // Xác định đúng feed và đúng lần phê duyệt.
         Criteria criteria = Criteria.where("id")
                 .is(event.externalId())
 
-                // Kết quả chỉ áp dụng cho feed đã được phê duyệt.
                 .and("status")
                 .is(FeedStatus.APPROVED)
 
-                // Không áp dụng kết quả của một sự kiện phê duyệt khác.
                 .and("approvalEventId")
                 .is(approvalEventId)
 
-                // Chấp nhận lần đầu hoặc nhận lại đúng kết quả đã lưu.
                 .orOperator(
                         waitingForResult,
                         sameResultAlreadyStored
@@ -277,8 +267,6 @@ public class SocialFeedStateRepository {
                 SocialRawFeed.class
         );
 
-        // Dùng matchedCount để coi việc nhận lại cùng kết quả là thành công.
-        // Khi dữ liệu không đổi: matchedCount có thể là 1, modifiedCount là 0.
         return result.getMatchedCount() == 1;
     }
 

@@ -5,6 +5,7 @@ import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.common.social.SocialEvents;
 import iuh.fit.dispatchservice.entity.DispatchSocialOutbox;
+import iuh.fit.dispatchservice.entity.Location;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.EmergencyLevel;
@@ -15,6 +16,7 @@ import iuh.fit.dispatchservice.kafka.producer.SocialSosNotificationProducer;
 import iuh.fit.dispatchservice.repositories.*;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +56,7 @@ public class SocialRescueDispatchService {
 
         // Đăng ký externalId ngay trong transaction hiện tại.
         // PostgreSQL quyết định có trùng dựa trên khóa chính.
-        int registered = receiptRepository.TryRegister(
+        int registered = receiptRepository.tryRegister(
                 event.externalId(),
                 event.eventId(),
                 receivedAt
@@ -73,14 +75,15 @@ public class SocialRescueDispatchService {
 
         SocialEvents.RescueData data = event.data();
 
-        var point = geometryFactory.createPoint(
+         var point = geometryFactory.createPoint(
                 new Coordinate(
                         data.longitude(),
                         data.latitude()
                 )
         );
 
-        var matchedLocation =
+
+        Location matchedLocation =
                 locationRepository.findLocationContainingCoordinates(
                         data.longitude(),
                         data.latitude()
@@ -122,7 +125,7 @@ public class SocialRescueDispatchService {
         // Flush để rescue_requests có bản ghi trước khi cập nhật khóa ngoại.
         RescueRequest savedRequest = rescueRequestRepository.saveAndFlush(rescueRequest);
 
-        int attached = receiptRepository.AttachRescueRequest(
+        int attached = receiptRepository.attachRescueRequest(
                 event.externalId(),
                 event.eventId(),
                 savedRequest.getId()

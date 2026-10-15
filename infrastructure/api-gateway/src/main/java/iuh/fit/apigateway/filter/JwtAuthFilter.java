@@ -41,11 +41,13 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
 
             try {
                 UUID userId = jwtUtil.extractId(authHeader);
+                String role = jwtUtil.extractRole(authHeader);
 
                 if (userId != null) {
                     // Nhúng X-User-Id vào Header mới của Request chuyển tiếp
                     ServerWebExchange mutatedExchange = exchange.mutate()
                             .request(r -> r.header("X-User-Id", userId.toString()))
+                            .request(r -> r.header("X-User-Role", role))
                             .build();
                     return chain.filter(mutatedExchange);
                 }

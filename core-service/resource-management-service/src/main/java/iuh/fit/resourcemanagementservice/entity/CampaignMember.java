@@ -15,6 +15,10 @@ import java.util.UUID;
         name = "campaign_members",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uq_campaign_team_member", columnNames = {"campaign_team_id", "member_id"})
+        },
+        indexes = {
+                @Index(name = "idx_campaign_member_member_id", columnList = "member_id"),
+                @Index(name = "idx_campaign_member_phone", columnList = "phone")
         }
 )
 @Getter

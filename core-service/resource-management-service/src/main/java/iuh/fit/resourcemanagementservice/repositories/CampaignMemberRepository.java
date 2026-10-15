@@ -2,6 +2,7 @@ package iuh.fit.resourcemanagementservice.repositories;
 
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -44,6 +45,7 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
         AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.ACCEPTED
         AND cm.campaignTeam.status <> iuh.fit.resourcemanagementservice.enums.TeamStatus.DISBANDED
         AND cm.campaignTeam.approvalStatus <> iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus.REJECTED
+        AND cm.campaignTeam.campaign.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
     """)
     List<UUID> findActiveAcceptedMemberIds(@Param("memberIds") Collection<UUID> memberIds);
 
@@ -54,6 +56,34 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
         AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.ACCEPTED
         AND cm.campaignTeam.status <> iuh.fit.resourcemanagementservice.enums.TeamStatus.DISBANDED
         AND cm.campaignTeam.approvalStatus <> iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus.REJECTED
+        AND cm.campaignTeam.campaign.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
     """)
-    boolean existsActiveAcceptedMembership(@org.springframework.data.repository.query.Param("memberId") UUID memberId);
+    boolean existsActiveAcceptedMembership(@Param("memberId") UUID memberId);
+
+    @Query("""
+        SELECT cm FROM CampaignMember cm
+        JOIN FETCH cm.campaignTeam ct
+        JOIN FETCH ct.campaign c
+        WHERE cm.memberId = :memberId
+        AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED
+        AND ct.status <> iuh.fit.resourcemanagementservice.enums.TeamStatus.DISBANDED
+        AND ct.approvalStatus = iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus.APPROVED
+        AND c.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
+        ORDER BY cm.createdAt DESC
+    """)
+    List<CampaignMember> findMyInvitations(@Param("memberId") UUID memberId);
+
+    @Modifying
+    @Query("""
+        UPDATE CampaignMember cm
+        SET cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.CANCELLED,
+            cm.modifiedAt = CURRENT_TIMESTAMP
+        WHERE cm.memberId = :memberId
+        AND cm.id <> :acceptedMembershipId
+        AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED
+    """)
+    int cancelOtherPendingInvitations(
+            @Param("memberId") UUID memberId,
+            @Param("acceptedMembershipId") UUID acceptedMembershipId
+    );
 }

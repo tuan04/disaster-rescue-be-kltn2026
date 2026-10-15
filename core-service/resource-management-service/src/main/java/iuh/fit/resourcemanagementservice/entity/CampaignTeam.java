@@ -67,6 +67,9 @@ public class CampaignTeam {
     @Column(name = "leader_id", nullable = false)
     private UUID leaderId;
 
+    @Column(name = "leader_name")
+    private String leaderName;
+
     @Column(name = "leader_phone", nullable = false, length = 15)
     private String leaderPhone;
 

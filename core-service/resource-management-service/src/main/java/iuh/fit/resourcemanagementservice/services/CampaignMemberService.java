@@ -7,6 +7,7 @@ import iuh.fit.resourcemanagementservice.client.UserGrpcClient;
 import iuh.fit.resourcemanagementservice.dtos.request.AddMemberRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.AddMembersRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
+import iuh.fit.resourcemanagementservice.dtos.response.TeamInvitationResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.enums.SexEnum;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +42,7 @@ public class CampaignMemberService {
     private final CampaignTeamRepository campaignTeamRepository;
     private final CampaignMemberMapper campaignMemberMapper;
     private final UserGrpcClient userGrpcClient;
+    private final RedisService redisService;
 
     private final TransactionTemplate transactionTemplate;
 
@@ -209,6 +212,86 @@ public class CampaignMemberService {
                 .stream()
                 .map(campaignMemberMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeamInvitationResponse> getMyInvitations(UUID rescuerId) {
+        if (rescuerId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        List<CampaignMember> invitations = campaignMemberRepository.findMyInvitations(rescuerId);
+        return invitations.stream()
+                .map(TeamInvitationResponse::fromEntity)
+                .toList();
+    }
+
+    public MemberResponse acceptInvitation(UUID membershipId, UUID rescuerId) {
+        if (rescuerId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        String lockKey = "lock:rescuer:membership:" + rescuerId;
+        boolean acquired = redisService.acquireLock(lockKey, 5);
+        if (!acquired) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đã gửi yêu cầu chấp nhận lời mời");
+        }
+
+        try {
+            return transactionTemplate.execute(status -> {
+                CampaignMember member = campaignMemberRepository.findById(membershipId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Lời mời tham gia đội không tồn tại"));
+
+                if (!rescuerId.equals(member.getMemberId()) || member.getMembershipStatus() != MembershipStatus.INVITED) {
+                    throw new BusinessException(ErrorCode.FORBIDDEN, "Không thể thao tác với lời mời này");
+                }
+
+                CampaignTeam team = member.getCampaignTeam();
+                if (team.getStatus() == TeamStatus.DISBANDED) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
+                }
+                if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ chưa được phê duyệt hoạt động");
+                }
+                if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch cứu hộ không còn hoạt động");
+                }
+
+                if (campaignMemberRepository.existsActiveAcceptedMembership(rescuerId)) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Bạn đã tham gia một đội cứu hộ khác");
+                }
+
+                member.setMembershipStatus(MembershipStatus.ACCEPTED);
+                member.setModifiedAt(LocalDateTime.now());
+                CampaignMember saved = campaignMemberRepository.save(member);
+
+                campaignMemberRepository.cancelOtherPendingInvitations(rescuerId, membershipId);
+
+                return campaignMemberMapper.toResponse(saved);
+            });
+        } finally {
+            redisService.releaseLock(lockKey);
+        }
+    }
+
+    @Transactional
+    public MemberResponse declineInvitation(UUID membershipId, UUID rescuerId) {
+        if (rescuerId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        CampaignMember member = campaignMemberRepository.findById(membershipId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Lời mời tham gia đội không tồn tại"));
+
+        if (!rescuerId.equals(member.getMemberId()) || member.getMembershipStatus() != MembershipStatus.INVITED) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Không thể thao tác với lời mời này");
+        }
+
+        member.setMembershipStatus(MembershipStatus.DECLINED);
+        member.setModifiedAt(LocalDateTime.now());
+        CampaignMember saved = campaignMemberRepository.save(member);
+
+        return campaignMemberMapper.toResponse(saved);
     }
 
     private CampaignTeam findTeamById(UUID teamId) {

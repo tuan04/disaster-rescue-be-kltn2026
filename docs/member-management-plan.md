@@ -137,7 +137,7 @@ Thay vì lặp từng `memberId` để gọi `existsByCampaignTeam_IdAndMemberId
 
 ## IV. ĐẶC TẢ DANH SÁCH API
 
-### 1. `POST /api/v1/teams/{teamId}/members` - Thêm/Mời thành viên vào đội
+### 1. `POST /api/v1/campaign-members/team/{teamId}` - Thêm/Mời thành viên vào đội
 - **Header:** `X-User-Id: <UUID_LEADER>`
 - **Path Variable:** `teamId` (UUID)
 - **Request Body:**
@@ -167,41 +167,41 @@ Thay vì lặp từng `memberId` để gọi `existsByCampaignTeam_IdAndMemberId
 
 ---
 
-### 2. `GET /api/v1/teams/{teamId}/members` - Lấy danh sách thành viên của đội
+### 2. `GET /api/v1/campaign-members/team/{teamId}` - Lấy danh sách thành viên của đội
 - **Path Variable:** `teamId`
 - **Response:** `200 OK` danh sách thành viên kèm role, trạng thái tham gia, thông tin cá nhân.
 
 ---
 
-### 3. `POST /api/v1/campaign-teams/invitations/{membershipId}/accept` - Cứu hộ viên chấp nhận lời mời
+### 3. `POST /api/v1/campaign-members/invitations/{membershipId}/accept` - Cứu hộ viên chấp nhận lời mời
 - **Header:** `X-User-Id: <UUID_RESCUER>`
 - **Path Variable:** `membershipId` (ID bản ghi `campaign_members`)
 - **Xử lý:**
   - Kiểm tra bản ghi thuộc về `X-User-Id` và đang ở trạng thái `INVITED`.
   - Kiểm tra đội chưa giải tán (`status != DISBANDED`) và chiến dịch đang `ACTIVE`.
-  - Kiểm tra user chưa có membership `ACCEPTED` ở đội khác.
+  - Kiểm tra user chưa có membership `ACCEPTED` ở đội khác đang hoạt động.
   - Chuyển `membershipStatus = ACCEPTED`.
   - Tự động hủy (`CANCELLED`) các lời mời `INVITED` khác của user này (nếu có).
 - **Response:** `200 OK: "Đã tham gia đội cứu hộ thành công"`.
 
 ---
 
-### 4. `POST /api/v1/campaign-teams/invitations/{membershipId}/decline` - Cứu hộ viên từ chối lời mời
+### 4. `POST /api/v1/campaign-members/invitations/{membershipId}/decline` - Cứu hộ viên từ chối lời mời
 - **Header:** `X-User-Id: <UUID_RESCUER>`
 - **Path Variable:** `membershipId`
 - **Xử lý:**
   - Chuyển `membershipStatus = DECLINED`.
-- **Response:** `200 OK: "Đã từ chối lời mời tham gia đội"`.
+- **Response:** `200 OK: "Đã từ chối lời mời tham gia đội cứu hộ"`.
 
 ---
 
-### 5. `GET /api/v1/campaign-teams/my-invitations` - Xem danh sách lời mời của tôi
+### 5. `GET /api/v1/campaign-members/my-invitations` - Xem danh sách lời mời của tôi
 - **Header:** `X-User-Id: <UUID_RESCUER>`
 - **Response:** `200 OK` danh sách các lời mời đang chờ (`INVITED`) kèm thông tin tên đội, tên chiến dịch, tên đội trưởng, SĐT đội trưởng.
 
 ---
 
-### 6. `DELETE /api/v1/teams/{teamId}/members/{memberId}` - Loại thành viên khỏi đội
+### 6. `DELETE /api/v1/campaign-members/team/{teamId}/{memberId}` - Loại thành viên khỏi đội
 - **Header:** `X-User-Id: <UUID_LEADER>`
 - **Xử lý:**
   - Không cho phép xóa `LEADER`.
@@ -215,7 +215,7 @@ Thay vì lặp từng `memberId` để gọi `existsByCampaignTeam_IdAndMemberId
 
 ### Giai đoạn 1: Chuẩn hóa Model & Validation
 - [x] Bắt buộc số điện thoại cho Guest Member (`@NotBlank` và regex SĐT hợp lệ), giữ `phone` NOT NULL.
-- [ ] Chuẩn bị cơ chế Redis Distributed Lock `lock:rescuer:membership:${userId}` để bảo vệ khi Accept lời mời.
+- [x] Chuẩn bị cơ chế Redis Distributed Lock `lock:rescuer:membership:${userId}` để bảo vệ khi Accept lời mời.
 
 ### Giai đoạn 2: Tối ưu & Bổ sung logic API Add Member (ĐÃ HOÀN THÀNH & COMPILE THÀNH CÔNG)
 - [x] Viết query kiểm tra hàng loạt trong `CampaignMemberRepository` (loại bỏ N+1 query):
@@ -234,11 +234,11 @@ Thay vì lặp từng `memberId` để gọi `existsByCampaignTeam_IdAndMemberId
 - [x] Chuẩn hóa `MemberResponse` bổ sung `membershipStatus`, `membershipType`, `modifiedAt`.
 - [x] Controller `POST /api/v1/teams/{teamId}/members` trả về HTTP `201 CREATED`.
 
-### Giai đoạn 3: Triển khai luồng Lời mời (Accept / Decline)
-- [ ] Thêm API `GET /api/v1/campaign-teams/my-invitations` để Cứu hộ viên xem các đội đang mời mình.
-- [ ] Thêm API `POST /api/v1/campaign-teams/invitations/{id}/accept`.
-- [ ] Thêm API `POST /api/v1/campaign-teams/invitations/{id}/decline`.
-- [ ] Khi Accept: Kiểm tra điều kiện một người một đội và tự động hủy các lời mời còn lại.
+### Giai đoạn 3: Triển khai luồng Lời mời (Accept / Decline) (ĐÃ HOÀN THÀNH & COMPILE THÀNH CÔNG)
+- [x] Thêm API `GET /api/v1/campaign-teams/my-invitations` để Cứu hộ viên xem các đội đang mời mình.
+- [x] Thêm API `POST /api/v1/campaign-teams/invitations/{membershipId}/accept`.
+- [x] Thêm API `POST /api/v1/campaign-teams/invitations/{membershipId}/decline`.
+- [x] Khi Accept: Sử dụng Redis Lock theo `userId`, kiểm tra điều kiện một người một đội (`existsActiveAcceptedMembership`), và tự động hủy (`CANCELLED`) các lời mời còn lại bằng câu SQL update hàng loạt.
 
 ### Giai đoạn 4: Hoàn thiện API Remove Member & Test Postman
 - [ ] Thêm ràng buộc chặn xóa thành viên khi đội đang `BUSY`.

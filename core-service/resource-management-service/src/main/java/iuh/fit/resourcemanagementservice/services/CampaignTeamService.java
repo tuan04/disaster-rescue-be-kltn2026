@@ -90,9 +90,10 @@ public class CampaignTeamService {
             return transactionTemplate.execute(status -> {
                 CampaignTeam team = CampaignTeam.builder()
                         .campaign(campaign)
-                    .teamName(teamName == null ? null : teamName.trim())
+                        .teamName(teamName == null ? null : teamName.trim())
                         .vehicles(vehicles == null ? new ArrayList<>() : new ArrayList<>(vehicles))
                         .leaderId(leaderId)
+                        .leaderName(leaderInfo.getFullName())
                         .leaderPhone(leaderInfo.getPhoneNumber())
                         .approvalStatus(initialApprovalStatus)
                         .build();

@@ -158,23 +158,25 @@ public class CampaignTeamService {
     public TeamResponse disbandTeam(UUID teamId, UUID leaderId) {
         CampaignTeam team = findById(teamId);
 
-        if (leaderId != null && !team.getLeaderId().equals(leaderId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Bạn không có quyền giải tán đội cứu hộ này");
+        if (leaderId == null || !team.getLeaderId().equals(leaderId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Không có quyền thực hiện thao tác này");
         }
 
         if (team.getStatus() == TeamStatus.DISBANDED) {
-            return campaignTeamMapper.toResponse(team);
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
+        }
+
+        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Không thể giải tán đội cứu hộ chưa được phê duyệt");
         }
 
         if (team.getStatus() == TeamStatus.BUSY) {
-            throw new BusinessException(ErrorCode.CONFLICT,
-                    "Đội cứu hộ đang trong trạng thái BUSY thực hiện nhiệm vụ, không thể giải tán đột ngột. Vui lòng hoàn thành nhiệm vụ trước.");
+            throw new BusinessException(ErrorCode.CONFLICT, "Không thể giải tán đội đang thực hiện nhiệm vụ.");
         }
 
         team.setStatus(TeamStatus.DISBANDED);
         CampaignTeam updatedTeam = campaignTeamRepository.save(team);
 
-        // Xóa vị trí realtime khỏi Redis
         redisService.deleteLocation(teamId);
 
         return campaignTeamMapper.toResponse(updatedTeam);

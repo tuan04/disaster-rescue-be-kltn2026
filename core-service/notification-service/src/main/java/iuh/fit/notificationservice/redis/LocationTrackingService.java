@@ -21,7 +21,7 @@ public class LocationTrackingService {
     private final StringRedisTemplate stringRedisTemplate;
 
     /**
-     * Tìm danh sách userId (member) nằm trong bán kính thảm họa từ Redis GEO.
+     * Tìm danh sách teams nằm trong bán kính thảm họa từ Redis GEO.
      * Sử dụng thuật toán tìm kiếm không gian tích hợp sẵn của Redis GEO (opsForGeo().radius()).
      *
      * @param longitude Kinh độ (x) của tâm vòng tròn
@@ -29,7 +29,7 @@ public class LocationTrackingService {
      * @param radiusMeters Bán kính quét tính theo mét (Meters)
      * @return Danh sách userId (String của UUID) nằm trong bán kính
      */
-    public List<String> findUsersInRadius(double longitude, double latitude, int radiusMeters) {
+    public List<String> findTeamsInRadius(double longitude, double latitude, int radiusMeters) {
             // Đảm bảo thứ tự tham số của Point: (Kinh độ - x, Vĩ độ - y)
             Point centerPoint = new Point(longitude, latitude);
             Distance searchDistance = new Distance(radiusMeters, RedisGeoCommands.DistanceUnit.METERS);
@@ -43,11 +43,11 @@ public class LocationTrackingService {
                 return Collections.emptyList();
             }
 
-            // Trích xuất member (userId) từ kết quả Redis GEO
-            List<String> userIds = geoResults.getContent().stream()
+            // Trích xuất TeamsIds từ kết quả Redis GEO
+            List<String> TeamsIds = geoResults.getContent().stream()
                     .map(result -> result.getContent().getName())
                     .filter(Objects::nonNull)
                     .toList();
-            return userIds;
+            return TeamsIds;
     }
 }

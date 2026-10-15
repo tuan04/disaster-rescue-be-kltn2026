@@ -54,3 +54,11 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+social:
+  outbox:
+    # Nghỉ 2 giây sau khi một lượt gửi hoàn thành.
+    publish-delay-ms: 2000
+
+    # Chờ 10 giây trước lần chạy đầu tiên.
+    initial-delay-ms: 10000

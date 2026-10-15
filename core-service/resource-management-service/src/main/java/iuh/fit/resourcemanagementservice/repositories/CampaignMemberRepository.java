@@ -15,13 +15,7 @@ import java.util.UUID;
 @Repository
 public interface CampaignMemberRepository extends JpaRepository<CampaignMember, UUID> {
 
-    boolean existsByCampaignTeam_IdAndMemberId(UUID campaignTeamId, UUID memberId);
-
-    boolean existsByCampaignTeam_IdAndPhone(UUID campaignTeamId, String phone);
-
     Optional<CampaignMember> findByCampaignTeam_IdAndMemberId(UUID campaignTeamId, UUID memberId);
-
-    void deleteByCampaignTeam_IdAndMemberId(UUID campaignTeamId, UUID memberId);
 
     List<CampaignMember> findByCampaignTeam_Id(UUID campaignTeamId);
 
@@ -32,6 +26,7 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
         FROM CampaignMember cm
         WHERE cm.campaignTeam.id = :campaignTeamId
         AND cm.phone IN :phones
+        AND cm.membershipStatus <> iuh.fit.resourcemanagementservice.enums.MembershipStatus.CANCELLED
     """)
     List<String> findExistingPhonesInTeam(
             @Param("campaignTeamId") UUID campaignTeamId,
@@ -73,7 +68,7 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
     """)
     List<CampaignMember> findMyInvitations(@Param("memberId") UUID memberId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE CampaignMember cm
         SET cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.CANCELLED,
@@ -86,4 +81,17 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
             @Param("memberId") UUID memberId,
             @Param("acceptedMembershipId") UUID acceptedMembershipId
     );
+
+    Optional<CampaignMember> findByIdAndCampaignTeam_Id(UUID id, UUID campaignTeamId);
+
+    @Query("SELECT cm FROM CampaignMember cm WHERE cm.campaignTeam.id = :teamId AND cm.membershipStatus IN ('ACCEPTED', 'INVITED')")
+    List<CampaignMember> findActiveMembersByTeamId(@Param("teamId") UUID teamId);
+
+    @Query("""
+        SELECT cm FROM CampaignMember cm
+        JOIN FETCH cm.campaignTeam ct
+        JOIN FETCH ct.campaign c
+        WHERE cm.id = :id
+    """)
+    Optional<CampaignMember> findByIdWithTeamAndCampaign(@Param("id") UUID id);
 }

@@ -240,8 +240,11 @@ Thay vì lặp từng `memberId` để gọi `existsByCampaignTeam_IdAndMemberId
 - [x] Thêm API `POST /api/v1/campaign-teams/invitations/{membershipId}/decline`.
 - [x] Khi Accept: Sử dụng Redis Lock theo `userId`, kiểm tra điều kiện một người một đội (`existsActiveAcceptedMembership`), và tự động hủy (`CANCELLED`) các lời mời còn lại bằng câu SQL update hàng loạt.
 
-### Giai đoạn 4: Hoàn thiện API Remove Member & Test Postman
-- [ ] Thêm ràng buộc chặn xóa thành viên khi đội đang `BUSY`.
-- [ ] Chuyển `membershipStatus = CANCELLED` khi thành viên bị loại.
-- [ ] Biên dịch kiểm thử toàn bộ dự án (`mvn compile`).
-- [ ] Viết kịch bản test Postman cho toàn bộ luồng Member.
+### Giai đoạn 4: Hoàn thiện API Remove Member & Test Postman (ĐÃ HOÀN THÀNH)
+- [x] Xác thực quyền Đội trưởng bằng header `X-User-Id` khi xóa thành viên.
+- [x] Thêm ràng buộc chặn xóa thành viên khi đội đang `BUSY` hoặc đã `DISBANDED`.
+- [x] Chặn xóa Đội trưởng khỏi đội cứu hộ.
+- [x] Chuyển `membershipStatus = CANCELLED` khi thành viên bị loại (soft-delete lưu vết).
+- [x] Lọc bỏ thành viên `CANCELLED` khi lấy danh sách đội (`getTeamMembers`).
+- [x] Biên dịch kiểm thử toàn bộ dự án (`mvn compile`).
+- [x] Viết kịch bản test Postman cho toàn bộ luồng Member.

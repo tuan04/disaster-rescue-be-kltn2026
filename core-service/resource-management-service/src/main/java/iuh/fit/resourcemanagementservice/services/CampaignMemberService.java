@@ -183,32 +183,48 @@ public class CampaignMemberService {
     }
 
     @Transactional
-    public void removeMember(UUID teamId, UUID memberIdOrRecordId) {
-        findTeamById(teamId);
+    public void removeMember(UUID teamId, UUID currentUserId, UUID memberId) {
+        CampaignTeam team = findTeamById(teamId);
 
-        CampaignMember member = campaignMemberRepository.findById(memberIdOrRecordId)
-                .filter(m -> m.getCampaignTeam().getId().equals(teamId))
-                .orElseGet(() -> campaignMemberRepository.findByCampaignTeam_IdAndMemberId(teamId, memberIdOrRecordId)
-                        .orElseThrow(() -> new BusinessException(
-                                ErrorCode.RESOURCE_NOT_FOUND,
-                                "Không tìm thấy thành viên trong đội cứu hộ này"
-                        )));
+        if (currentUserId == null || !team.getLeaderId().equals(currentUserId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Không có quyền thực hiện thao tác này");
+        }
+
+        if (team.getStatus() == TeamStatus.BUSY) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Không thể xóa thành viên khi đội đang làm nhiệm vụ");
+        }
+
+        if (team.getStatus() == TeamStatus.DISBANDED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
+        }
+
+        CampaignMember member = campaignMemberRepository.findByIdAndCampaignTeam_Id(memberId, teamId)
+        .orElseThrow(() -> new BusinessException(
+                ErrorCode.RESOURCE_NOT_FOUND,
+                "Thành viên không tồn tại trong đội này"
+        ));
+
 
         if (member.getRoleInTeam() == TeamRole.LEADER) {
             throw new BusinessException(
                     ErrorCode.CONFLICT,
-                    "Không thể xóa Đội trưởng khỏi đội cứu hộ. Để kết thúc hoạt động, vui lòng chọn Off team / Giải tán đội."
+                    "Không thể xóa Đội trưởng khỏi đội cứu hộ."
             );
         }
 
-        campaignMemberRepository.delete(member);
+        if (member.getMembershipStatus() == MembershipStatus.CANCELLED || member.getMembershipStatus() == MembershipStatus.DECLINED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Thành viên này hiện không còn trong đội");
+        }
+
+        member.setMembershipStatus(MembershipStatus.CANCELLED);
+        campaignMemberRepository.save(member);
     }
 
     @Transactional(readOnly = true)
     public List<MemberResponse> getTeamMembers(UUID teamId) {
         findTeamById(teamId);
 
-        return campaignMemberRepository.findByCampaignTeam_Id(teamId)
+        return campaignMemberRepository.findActiveMembersByTeamId(teamId)
                 .stream()
                 .map(campaignMemberMapper::toResponse)
                 .toList();
@@ -239,7 +255,7 @@ public class CampaignMemberService {
 
         try {
             return transactionTemplate.execute(status -> {
-                CampaignMember member = campaignMemberRepository.findById(membershipId)
+                CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Lời mời tham gia đội không tồn tại"));
 
                 if (!rescuerId.equals(member.getMemberId()) || member.getMembershipStatus() != MembershipStatus.INVITED) {
@@ -262,7 +278,6 @@ public class CampaignMemberService {
                 }
 
                 member.setMembershipStatus(MembershipStatus.ACCEPTED);
-                member.setModifiedAt(LocalDateTime.now());
                 CampaignMember saved = campaignMemberRepository.save(member);
 
                 campaignMemberRepository.cancelOtherPendingInvitations(rescuerId, membershipId);
@@ -288,7 +303,6 @@ public class CampaignMemberService {
         }
 
         member.setMembershipStatus(MembershipStatus.DECLINED);
-        member.setModifiedAt(LocalDateTime.now());
         CampaignMember saved = campaignMemberRepository.save(member);
 
         return campaignMemberMapper.toResponse(saved);

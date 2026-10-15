@@ -52,9 +52,10 @@ public class CampaignMemberController {
     @DeleteMapping("/team/{teamId}/{memberId}")
     public ResponseEntity<ApiResponse<Void>> removeMember(
             @PathVariable("teamId") UUID teamId,
-            @PathVariable("memberId") UUID memberId
+            @PathVariable("memberId") UUID memberId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID currentUserId
     ) {
-        campaignMemberService.removeMember(teamId, memberId);
+        campaignMemberService.removeMember(teamId, currentUserId, memberId);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa thành viên khỏi đội cứu hộ thành công"));
     }
 

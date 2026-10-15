@@ -1,7 +1,6 @@
 package iuh.fit.integration.controller;
 
 import iuh.fit.common.response.ApiResponse;
-import iuh.fit.common.response.ErrorResponse;
 import iuh.fit.common.response.PageResponse;
 import iuh.fit.integration.dtos.request.SocialRawFeedFilterRequest;
 import iuh.fit.integration.entity.SocialRawFeed;
@@ -10,7 +9,6 @@ import iuh.fit.integration.services.SocialRawFeedService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +50,4 @@ public class SocialRawFeedController {
                 ApiResponse.success(approvedFeed, "Feed đã được phê duyệt thành công")
         );
     }
-
-
-
 }

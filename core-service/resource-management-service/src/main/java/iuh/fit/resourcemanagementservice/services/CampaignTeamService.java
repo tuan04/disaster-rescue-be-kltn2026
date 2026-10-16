@@ -17,6 +17,9 @@ import iuh.fit.resourcemanagementservice.events.producer.LocationEventProducer;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import iuh.fit.common.response.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -183,19 +186,39 @@ public class CampaignTeamService {
     }
     
     /**
-     * Lấy thông tin đội đang hoạt động của Đội trưởng hiện tại
+     * Lấy thông tin đội đang hoạt động của người dùng hiện tại (áp dụng cho cả Đội trưởng và Cứu hộ viên)
      */
     @Transactional(readOnly = true)
-    public TeamResponse getMyActiveTeam(UUID leaderId) {
-        if (leaderId == null) {
+    public TeamResponse getMyActiveTeam(UUID userId) {
+        if (userId == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
         }
 
         CampaignTeam team = campaignTeamRepository.findFirstByLeaderIdAndStatusNotAndApprovalStatusNot(
-                leaderId, TeamStatus.DISBANDED, TeamApprovalStatus.REJECTED)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Bạn hiện không quản lý đội cứu hộ nào đang hoạt động"));
+                userId, TeamStatus.DISBANDED, TeamApprovalStatus.REJECTED)
+                .or(() -> campaignMemberService.findActiveTeamByMemberId(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Bạn hiện không tham gia đội cứu hộ nào đang hoạt động"));
 
         return campaignTeamMapper.toResponse(team);
+    }
+
+    /**
+     * Lấy danh sách đội cứu hộ (hỗ trợ phân trang, lọc theo chiến dịch, trạng thái duyệt, trạng thái hoạt động, tìm kiếm)
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<TeamResponse> getTeams(
+            UUID campaignId,
+            TeamApprovalStatus approvalStatus,
+            TeamStatus status,
+            String keyword,
+            Pageable pageable
+    ) {
+        String searchKey = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        Page<CampaignTeam> teamPage = campaignTeamRepository.findTeamsWithFilters(
+                campaignId, approvalStatus, status, searchKey, pageable
+        );
+        Page<TeamResponse> responsePage = teamPage.map(campaignTeamMapper::toResponse);
+        return PageResponse.from(responsePage);
     }
 
     /**

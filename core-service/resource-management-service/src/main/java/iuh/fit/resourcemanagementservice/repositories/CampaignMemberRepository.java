@@ -1,6 +1,7 @@
 package iuh.fit.resourcemanagementservice.repositories;
 
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
+import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -94,4 +95,16 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
         WHERE cm.id = :id
     """)
     Optional<CampaignMember> findByIdWithTeamAndCampaign(@Param("id") UUID id);
+
+    @Query("""
+        SELECT ct FROM CampaignMember cm
+        JOIN cm.campaignTeam ct
+        JOIN FETCH ct.campaign c
+        WHERE cm.memberId = :memberId
+          AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.ACCEPTED
+          AND ct.status <> iuh.fit.resourcemanagementservice.enums.TeamStatus.DISBANDED
+          AND ct.approvalStatus = iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus.APPROVED
+          AND c.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
+    """)
+    Optional<CampaignTeam> findActiveTeamByMemberId(@Param("memberId") UUID memberId);
 }

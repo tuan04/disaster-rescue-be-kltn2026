@@ -13,6 +13,11 @@ import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.services.CampaignTeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import iuh.fit.common.response.PageResponse;
+import iuh.fit.resourcemanagementservice.enums.TeamStatus;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -67,12 +72,26 @@ public class CampaignTeamController {
     }
 
     /**
-     * API Lấy thông tin đội cứu hộ đang hoạt động của Đội trưởng hiện tại
+     * API Lấy danh sách Đội cứu hộ (phân trang, lọc theo chiến dịch, trạng thái duyệt, trạng thái hoạt động, tìm kiếm)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<TeamResponse>>> getTeams(
+            @RequestParam(required = false) UUID campaignId,
+            @RequestParam(required = false) TeamApprovalStatus approvalStatus,
+            @RequestParam(required = false) TeamStatus status,
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<TeamResponse> response = campaignTeamService.getTeams(campaignId, approvalStatus, status, keyword, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách đội cứu hộ thành công"));
+    }
+
+    /**
+     * API Lấy thông tin đội cứu hộ đang hoạt động của người dùng hiện tại (Đội trưởng hoặc Cứu hộ viên)
      */
     @GetMapping("/my-active")
     public ResponseEntity<ApiResponse<TeamResponse>> getMyActiveTeam(
-            @RequestHeader(value = "X-User-Id", required = false) UUID leaderId) {
-        TeamResponse response = campaignTeamService.getMyActiveTeam(leaderId);
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId) {
+        TeamResponse response = campaignTeamService.getMyActiveTeam(userId);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin đội cứu hộ đang hoạt động thành công"));
     }
 

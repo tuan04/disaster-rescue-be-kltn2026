@@ -79,6 +79,14 @@ public class CampaignMemberService {
         return campaignMemberRepository.existsActiveAcceptedMembership(memberId);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<CampaignTeam> findActiveTeamByMemberId(UUID memberId) {
+        if (memberId == null) {
+            return java.util.Optional.empty();
+        }
+        return campaignMemberRepository.findActiveTeamByMemberId(memberId);
+    }
+
     public List<MemberResponse> addMembers(UUID teamId, UUID currentUserId, AddMembersRequest request) {
         CampaignTeam team = findTeamById(teamId);
 

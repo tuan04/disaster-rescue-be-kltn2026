@@ -72,3 +72,6 @@ goong:
   api-key: ${GOONG_API_KEY:}
   base-url: ${GOONG_BASE_URL:https://rsapi.goong.io}
 
+rsa:
+  public-key-path: ${RSA_PUBLIC_PATH}
+

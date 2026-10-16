@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,7 +39,9 @@ public class UserController {
 
     @GetMapping({ "/me", "/profile" })
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
-            @RequestHeader("X-User-Id") UUID userId) {
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
         return ResponseEntity.ok(ApiResponse.success(userService.getUserProfile(userId)));
     }
 

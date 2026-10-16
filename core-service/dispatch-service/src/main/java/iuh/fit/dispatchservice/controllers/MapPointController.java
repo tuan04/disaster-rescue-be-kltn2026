@@ -16,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -114,8 +116,11 @@ public class MapPointController {
     public ResponseEntity<ApiResponse<MapPointDetailResponse>> createHazardReports(
             @ModelAttribute @Valid CreateHazardReportRequest request,
             @RequestParam(value = "images", required = false) List<MultipartFile> images,
-            @RequestHeader(value = "X-User-Id", required = false) UUID reporterId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID reporterId = jwt == null
+                ? null
+                : UUID.fromString(jwt.getClaimAsString("id"));
         return ResponseEntity.ok(ApiResponse.success(
                 mapPointService.createHazardReport(request, images, reporterId),
                 "Báo cáo hiểm họa thành công"

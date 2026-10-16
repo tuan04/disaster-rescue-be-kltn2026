@@ -73,4 +73,5 @@ docker/data/
 mysql_data/
 postgres_data/
 
+**/src/main/resources/keys
 

@@ -28,23 +28,4 @@ public class ChatController {
         String response = chatService.chat(prompt);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-
-    @PostMapping("/evaluate-test")
-    public ResponseEntity<ApiResponse<AIEvaluationNotificationResponse>> evaluateTest(@RequestBody SOSResponse sosRequest) {
-        String address = geocodingService.getAddress(sosRequest.latitude(), sosRequest.longitude());
-        System.out.println("Address: " + address);
-
-        WeatherContextResponse weatherContext = weatherService.getWeather(sosRequest.latitude(), sosRequest.longitude());
-        System.out.println("weatherContext: " + weatherContext);
-
-        AiEvaluationResponse aiEvaluation = aiService.evaluateEmergency(sosRequest.content(), weatherContext);
-        System.out.println("aiEvaluation: " + aiEvaluation);
-
-        return ResponseEntity.ok(ApiResponse.success(new AIEvaluationNotificationResponse(
-                sosRequest.id(),
-                aiEvaluation.emergencyLevel(),
-                aiEvaluation.evaluate(),
-                address
-        )));
-    }
 }

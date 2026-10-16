@@ -8,6 +8,8 @@ import iuh.fit.dispatchservice.dtos.request.UpdateSOSRequest;
 import iuh.fit.dispatchservice.services.SOSService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +24,11 @@ public class SOSController {
     @PostMapping
     public ResponseEntity<ApiResponse<SOSResponse>> createSOSRequest(
             @Validated @RequestBody SOSRequest sosRequest,
-            @RequestHeader(value = "X-User-Id", required = false) UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ){
+        UUID userId = jwt == null
+                ? null
+                : UUID.fromString(jwt.getClaimAsString("id"));
         SOSResponse sosResponse = sosService.createSOSRequest(sosRequest, userId);
         return ResponseEntity.ok(ApiResponse.success(sosResponse));
     }

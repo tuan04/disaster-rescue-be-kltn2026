@@ -74,3 +74,13 @@ social:
 
     # Chờ 10 giây trước lần chạy đầu tiên.
     initial-delay-ms: 10000
+
+rsa:
+  # Cùng public key xác minh token do user-service ký.
+  public-key-path: ${RSA_PUBLIC_PATH}
+
+sms:
+  webhook:
+    # Khóa dành riêng cho hệ thống gửi SMS vào integration-service.
+    # Nếu chưa cấu hình, code bên dưới sẽ từ chối webhook SMS.
+    secret-key: ${SMS_WEBHOOK_SECRET_KEY}

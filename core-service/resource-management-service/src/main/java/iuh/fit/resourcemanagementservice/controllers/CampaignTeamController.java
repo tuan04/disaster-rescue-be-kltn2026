@@ -9,6 +9,7 @@ import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
+import iuh.fit.resourcemanagementservice.dtos.response.TeamSummaryResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.services.CampaignTeamService;
 import jakarta.validation.Valid;
@@ -72,16 +73,27 @@ public class CampaignTeamController {
     }
 
     /**
+     * API Lấy danh sách đội cứu hộ đang hoạt động trong các chiến dịch hiện tại (Dành cho Người dùng / Mobile)
+     */
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<PageResponse<TeamSummaryResponse>>> getActiveTeams(
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<TeamSummaryResponse> response = campaignTeamService.getActiveTeams(keyword, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách đội cứu hộ đang hoạt động thành công"));
+    }
+
+    /**
      * API Lấy danh sách Đội cứu hộ (phân trang, lọc theo chiến dịch, trạng thái duyệt, trạng thái hoạt động, tìm kiếm)
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<TeamResponse>>> getTeams(
+    public ResponseEntity<ApiResponse<PageResponse<TeamSummaryResponse>>> getTeams(
             @RequestParam(required = false) UUID campaignId,
             @RequestParam(required = false) TeamApprovalStatus approvalStatus,
             @RequestParam(required = false) TeamStatus status,
             @RequestParam(required = false) String keyword,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        PageResponse<TeamResponse> response = campaignTeamService.getTeams(campaignId, approvalStatus, status, keyword, pageable);
+        PageResponse<TeamSummaryResponse> response = campaignTeamService.getTeams(campaignId, approvalStatus, status, keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách đội cứu hộ thành công"));
     }
 

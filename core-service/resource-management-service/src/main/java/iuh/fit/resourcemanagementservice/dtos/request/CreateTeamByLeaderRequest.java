@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateTeamByLeaderRequest(
-        @NotNull(message = "campaignId không được để trống")
+        @NotNull(message = "Vui lòng chọn chiến dịch")
         UUID campaignId,
 
         @NotBlank(message = "Tên đội không được để trống")

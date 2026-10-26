@@ -8,6 +8,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
+import iuh.fit.resourcemanagementservice.dtos.response.TeamSummaryResponse;
 import iuh.fit.resourcemanagementservice.entity.Campaign;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
@@ -20,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import iuh.fit.common.response.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import iuh.fit.resourcemanagementservice.specifications.CampaignTeamSpecification;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -206,18 +209,37 @@ public class CampaignTeamService {
      * Lấy danh sách đội cứu hộ (hỗ trợ phân trang, lọc theo chiến dịch, trạng thái duyệt, trạng thái hoạt động, tìm kiếm)
      */
     @Transactional(readOnly = true)
-    public PageResponse<TeamResponse> getTeams(
+    public PageResponse<TeamSummaryResponse> getTeams(
             UUID campaignId,
             TeamApprovalStatus approvalStatus,
             TeamStatus status,
             String keyword,
             Pageable pageable
     ) {
-        String searchKey = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        Page<CampaignTeam> teamPage = campaignTeamRepository.findTeamsWithFilters(
-                campaignId, approvalStatus, status, searchKey, pageable
-        );
-        Page<TeamResponse> responsePage = teamPage.map(campaignTeamMapper::toResponse);
+        Specification<CampaignTeam> spec = Specification
+                .where(CampaignTeamSpecification.hasCampaignId(campaignId))
+                .and(CampaignTeamSpecification.hasApprovalStatus(approvalStatus))
+                .and(CampaignTeamSpecification.hasStatus(status))
+                .and(CampaignTeamSpecification.hasKeyword(keyword));
+
+        Page<CampaignTeam> teamPage = campaignTeamRepository.findAll(spec, pageable);
+        Page<TeamSummaryResponse> responsePage = teamPage.map(campaignTeamMapper::toSummaryResponse);
+        return PageResponse.from(responsePage);
+    }
+
+    /**
+     * Lấy danh sách đội cứu hộ đang hoạt động trong các chiến dịch hiện tại
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<TeamSummaryResponse> getActiveTeams(String keyword, Pageable pageable) {
+        Specification<CampaignTeam> spec = Specification
+                .where(CampaignTeamSpecification.inActiveCampaign())
+                .and(CampaignTeamSpecification.hasApprovalStatus(TeamApprovalStatus.APPROVED))
+                .and(CampaignTeamSpecification.notDisbanded())
+                .and(CampaignTeamSpecification.hasKeyword(keyword));
+
+        Page<CampaignTeam> teamPage = campaignTeamRepository.findAll(spec, pageable);
+        Page<TeamSummaryResponse> responsePage = teamPage.map(campaignTeamMapper::toSummaryResponse);
         return PageResponse.from(responsePage);
     }
 

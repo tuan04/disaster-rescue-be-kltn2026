@@ -6,6 +6,7 @@ import iuh.fit.common.grpc.UserInfoGrpcResponse;
 import iuh.fit.resourcemanagementservice.client.UserGrpcClient;
 import iuh.fit.resourcemanagementservice.dtos.request.AddMemberRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.AddMembersRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.JoinTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamInvitationResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -80,9 +82,9 @@ public class CampaignMemberService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.Optional<CampaignTeam> findActiveTeamByMemberId(UUID memberId) {
+    public Optional<CampaignTeam> findActiveTeamByMemberId(UUID memberId) {
         if (memberId == null) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
         return campaignMemberRepository.findActiveTeamByMemberId(memberId);
     }
@@ -94,15 +96,7 @@ public class CampaignMemberService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "Chỉ Đội trưởng mới có quyền mời thành viên vào đội");
         }
 
-        if (team.getStatus() == TeamStatus.DISBANDED) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
-        }
-        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ chưa được phê duyệt hoạt động");
-        }
-        if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch cứu hộ không còn hoạt động");
-        }
+        validateTeamAndCampaignActive(team);
 
         Set<UUID> memberIds = new HashSet<>();
         Set<String> guestPhones = new HashSet<>();
@@ -229,11 +223,17 @@ public class CampaignMemberService {
     }
 
     @Transactional(readOnly = true)
-    public List<MemberResponse> getTeamMembers(UUID teamId) {
+    public List<MemberResponse> getTeamMembers(UUID teamId, MembershipStatus status) {
         findTeamById(teamId);
 
-        return campaignMemberRepository.findActiveMembersByTeamId(teamId)
-                .stream()
+        List<CampaignMember> members;
+        if (status != null) {
+            members = campaignMemberRepository.findMembersByTeamIdAndStatus(teamId, status);
+        } else {
+            members = campaignMemberRepository.findActiveMembersByTeamId(teamId);
+        }
+
+        return members.stream()
                 .map(campaignMemberMapper::toResponse)
                 .toList();
     }
@@ -271,19 +271,8 @@ public class CampaignMemberService {
                 }
 
                 CampaignTeam team = member.getCampaignTeam();
-                if (team.getStatus() == TeamStatus.DISBANDED) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
-                }
-                if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ chưa được phê duyệt hoạt động");
-                }
-                if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch cứu hộ không còn hoạt động");
-                }
-
-                if (campaignMemberRepository.existsActiveAcceptedMembership(rescuerId)) {
-                    throw new BusinessException(ErrorCode.CONFLICT, "Bạn đã tham gia một đội cứu hộ khác");
-                }
+                validateTeamAndCampaignActive(team);
+                validateRescuerAvailability(rescuerId, team);
 
                 member.setMembershipStatus(MembershipStatus.ACCEPTED);
                 CampaignMember saved = campaignMemberRepository.save(member);
@@ -316,11 +305,195 @@ public class CampaignMemberService {
         return campaignMemberMapper.toResponse(saved);
     }
 
+    /**
+     * Cứu hộ viên gửi yêu cầu xin gia nhập đội cứu hộ
+     */
+    @Transactional
+    public MemberResponse requestToJoinTeam(UUID teamId, UUID rescuerId, JoinTeamRequest request) {
+        if (rescuerId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        CampaignTeam team = findTeamById(teamId);
+
+        validateTeamAndCampaignActive(team);
+        validateRescuerAvailability(rescuerId, team);
+
+        if (request == null || request.roleInTeam() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Vai trò trong đội không được để trống");
+        }
+        TeamRole role = request.roleInTeam();
+        if (role == TeamRole.LEADER) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Không thể xin gia nhập với vai trò Đội trưởng");
+        }
+
+        UserInfoGrpcResponse userInfo = userGrpcClient.getUserById(rescuerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin người dùng"));
+
+        if (userInfo.getRole() == null || !userInfo.getRole().equalsIgnoreCase("RESCUER")) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Chỉ cứu hộ viên mới có quyền xin gia nhập đội cứu hộ");
+        }
+
+        Optional<CampaignMember> existingOpt = campaignMemberRepository.findByCampaignTeam_IdAndMemberId(teamId, rescuerId);
+        CampaignMember memberToSave;
+
+        if (existingOpt.isPresent()) {
+            CampaignMember existing = existingOpt.get();
+            if (existing.getMembershipStatus() == MembershipStatus.ACCEPTED) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Bạn đã là thành viên chính thức của đội này");
+            }
+            if (existing.getMembershipStatus() == MembershipStatus.REQUESTED) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Bạn đã gửi yêu cầu gia nhập đội này rồi");
+            }
+            if (existing.getMembershipStatus() == MembershipStatus.INVITED) {
+                throw new BusinessException(ErrorCode.CONFLICT, "Bạn đã được đội này mời tham gia");
+            }
+
+            memberToSave = campaignMemberMapper.updateMember(
+                    existing,
+                    userInfo.getFullName(),
+                    userInfo.getPhoneNumber(),
+                    userInfo.getAvatarUrl(),
+                    SexEnum.from(userInfo.getSex()),
+                    role,
+                    MembershipStatus.REQUESTED
+            );
+        } else {
+            memberToSave = campaignMemberMapper.toMember(
+                    team,
+                    rescuerId,
+                    userInfo.getFullName(),
+                    userInfo.getPhoneNumber(),
+                    userInfo.getAvatarUrl(),
+                    SexEnum.from(userInfo.getSex()),
+                    role,
+                    MembershipType.REGISTERED,
+                    MembershipStatus.REQUESTED
+            );
+        }
+
+        CampaignMember saved = campaignMemberRepository.save(memberToSave);
+        return campaignMemberMapper.toResponse(saved);
+    }
+
+    /**
+     * Cứu hộ viên hủy yêu cầu xin gia nhập đội cứu hộ
+     */
+    @Transactional
+    public MemberResponse cancelJoinRequest(UUID membershipId, UUID rescuerId) {
+        if (rescuerId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        CampaignMember member = campaignMemberRepository.findById(membershipId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Yêu cầu gia nhập đội không tồn tại"));
+
+        if (!rescuerId.equals(member.getMemberId()) || member.getMembershipStatus() != MembershipStatus.REQUESTED) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Không thể thao tác với yêu cầu này");
+        }
+
+        member.setMembershipStatus(MembershipStatus.CANCELLED);
+        CampaignMember saved = campaignMemberRepository.save(member);
+
+        return campaignMemberMapper.toResponse(saved);
+    }
+
+    /**
+     * Đội trưởng phê duyệt yêu cầu xin gia nhập đội
+     */
+    public MemberResponse approveJoinRequest(UUID membershipId, UUID leaderId) {
+        if (leaderId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Yêu cầu gia nhập đội không tồn tại"));
+
+        String lockKey = "lock:rescuer:membership:" + member.getMemberId();
+        boolean acquired = redisService.acquireLock(lockKey, 5);
+        if (!acquired) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đang duyệt yêu cầu gia nhập");
+        }
+
+        try {
+            return transactionTemplate.execute(status -> {
+                CampaignTeam team = member.getCampaignTeam();
+                if (!leaderId.equals(team.getLeaderId())) {
+                    throw new BusinessException(ErrorCode.FORBIDDEN, "Chỉ Đội trưởng mới có quyền duyệt yêu cầu gia nhập");
+                }
+
+                if (member.getMembershipStatus() != MembershipStatus.REQUESTED) {
+                    throw new BusinessException(ErrorCode.CONFLICT, "Yêu cầu gia nhập không ở trạng thái chờ duyệt");
+                }
+
+                validateTeamAndCampaignActive(team);
+                validateRescuerAvailability(member.getMemberId(), team);
+
+                member.setMembershipStatus(MembershipStatus.ACCEPTED);
+                CampaignMember saved = campaignMemberRepository.save(member);
+
+                campaignMemberRepository.cancelOtherPendingInvitations(member.getMemberId(), membershipId);
+
+                return campaignMemberMapper.toResponse(saved);
+            });
+        } finally {
+            redisService.releaseLock(lockKey);
+        }
+    }
+
+    /**
+     * Đội trưởng từ chối yêu cầu xin gia nhập đội
+     */
+    @Transactional
+    public MemberResponse rejectJoinRequest(UUID membershipId, UUID leaderId) {
+        if (leaderId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+
+        CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Yêu cầu gia nhập không tồn tại"));
+
+        CampaignTeam team = member.getCampaignTeam();
+        if (!leaderId.equals(team.getLeaderId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Chỉ Đội trưởng mới có quyền từ chối yêu cầu gia nhập");
+        }
+
+        if (member.getMembershipStatus() != MembershipStatus.REQUESTED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Yêu cầu gia nhập này không ở trạng thái chờ duyệt");
+        }
+
+        member.setMembershipStatus(MembershipStatus.DECLINED);
+        CampaignMember saved = campaignMemberRepository.save(member);
+
+        return campaignMemberMapper.toResponse(saved);
+    }
+
     private CampaignTeam findTeamById(UUID teamId) {
         return campaignTeamRepository.findById(teamId)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.RESOURCE_NOT_FOUND,
                         "Không tìm thấy đội cứu hộ với ID: " + teamId
                 ));
+    }
+
+    private void validateTeamAndCampaignActive(CampaignTeam team) {
+        if (team.getStatus() == TeamStatus.DISBANDED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
+        }
+        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ chưa được phê duyệt hoạt động");
+        }
+        if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch cứu hộ không còn hoạt động");
+        }
+    }
+
+    private void validateRescuerAvailability(UUID rescuerId, CampaignTeam team) {
+        if (team.getLeaderId().equals(rescuerId)) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Cứu hộ viên đang là Đội trưởng của đội này");
+        }
+        if (campaignMemberRepository.existsActiveAcceptedMembership(rescuerId)) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Cứu hộ viên đã tham gia một đội cứu hộ khác đang hoạt động");
+        }
     }
 }

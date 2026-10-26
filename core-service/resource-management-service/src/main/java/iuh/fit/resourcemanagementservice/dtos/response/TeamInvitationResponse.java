@@ -1,6 +1,7 @@
 package iuh.fit.resourcemanagementservice.dtos.response;
 
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
+import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamRole;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public record TeamInvitationResponse(
         String leaderName,
         String leaderPhone,
         TeamRole roleInTeam,
+        MembershipStatus membershipStatus,
         LocalDateTime createdAt
 ) {
     public static TeamInvitationResponse fromEntity(CampaignMember member) {
@@ -28,6 +30,7 @@ public record TeamInvitationResponse(
                 team.getLeaderName(),
                 team.getLeaderPhone(),
                 member.getRoleInTeam(),
+                member.getMembershipStatus(),
                 member.getCreatedAt()
         );
     }

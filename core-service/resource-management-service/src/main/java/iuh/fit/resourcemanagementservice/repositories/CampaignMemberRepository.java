@@ -61,7 +61,7 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
         JOIN FETCH cm.campaignTeam ct
         JOIN FETCH ct.campaign c
         WHERE cm.memberId = :memberId
-        AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED
+        AND cm.membershipStatus IN (iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED, iuh.fit.resourcemanagementservice.enums.MembershipStatus.REQUESTED)
         AND ct.status <> iuh.fit.resourcemanagementservice.enums.TeamStatus.DISBANDED
         AND ct.approvalStatus = iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus.APPROVED
         AND c.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
@@ -76,16 +76,19 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
             cm.modifiedAt = CURRENT_TIMESTAMP
         WHERE cm.memberId = :memberId
         AND cm.id <> :acceptedMembershipId
-        AND cm.membershipStatus = iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED
+        AND cm.membershipStatus IN (iuh.fit.resourcemanagementservice.enums.MembershipStatus.INVITED, iuh.fit.resourcemanagementservice.enums.MembershipStatus.REQUESTED)
     """)
     int cancelOtherPendingInvitations(
             @Param("memberId") UUID memberId,
             @Param("acceptedMembershipId") UUID acceptedMembershipId
     );
 
+    @Query("SELECT cm FROM CampaignMember cm WHERE cm.campaignTeam.id = :teamId AND cm.membershipStatus = :status ORDER BY cm.createdAt DESC")
+    List<CampaignMember> findMembersByTeamIdAndStatus(@Param("teamId") UUID teamId, @Param("status") iuh.fit.resourcemanagementservice.enums.MembershipStatus status);
+
     Optional<CampaignMember> findByIdAndCampaignTeam_Id(UUID id, UUID campaignTeamId);
 
-    @Query("SELECT cm FROM CampaignMember cm WHERE cm.campaignTeam.id = :teamId AND cm.membershipStatus IN ('ACCEPTED', 'INVITED')")
+    @Query("SELECT cm FROM CampaignMember cm WHERE cm.campaignTeam.id = :teamId AND cm.membershipStatus IN ('ACCEPTED', 'INVITED', 'REQUESTED') ORDER BY cm.createdAt DESC")
     List<CampaignMember> findActiveMembersByTeamId(@Param("teamId") UUID teamId);
 
     @Query("""

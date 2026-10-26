@@ -2,8 +2,10 @@ package iuh.fit.resourcemanagementservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.resourcemanagementservice.dtos.request.AddMembersRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.JoinTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.MemberResponse;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamInvitationResponse;
+import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
 import iuh.fit.resourcemanagementservice.services.CampaignMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +28,10 @@ public class CampaignMemberController {
      */
     @GetMapping("/team/{teamId}")
     public ResponseEntity<ApiResponse<List<MemberResponse>>> getTeamMembers(
-            @PathVariable("teamId") UUID teamId
+            @PathVariable("teamId") UUID teamId,
+            @RequestParam(value = "status", required = false) MembershipStatus status
     ) {
-        List<MemberResponse> response = campaignMemberService.getTeamMembers(teamId);
+        List<MemberResponse> response = campaignMemberService.getTeamMembers(teamId, status);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách thành viên đội cứu hộ thành công"));
     }
 
@@ -92,5 +95,55 @@ public class CampaignMemberController {
     ) {
         MemberResponse response = campaignMemberService.declineInvitation(membershipId, rescuerId);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối lời mời tham gia đội cứu hộ"));
+    }
+
+    /**
+     * API Cứu hộ viên xin gia nhập đội cứu hộ
+     */
+    @PostMapping("/team/{teamId}/join-request")
+    public ResponseEntity<ApiResponse<MemberResponse>> requestToJoinTeam(
+            @PathVariable("teamId") UUID teamId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID rescuerId,
+            @Valid @RequestBody JoinTeamRequest request
+    ) {
+        MemberResponse response = campaignMemberService.requestToJoinTeam(teamId, rescuerId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Đã gửi yêu cầu gia nhập đội cứu hộ"));
+    }
+
+    /**
+     * API Cứu hộ viên hủy yêu cầu xin gia nhập đội
+     */
+    @PostMapping("/join-requests/{membershipId}/cancel")
+    public ResponseEntity<ApiResponse<MemberResponse>> cancelJoinRequest(
+            @PathVariable("membershipId") UUID membershipId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID rescuerId
+    ) {
+        MemberResponse response = campaignMemberService.cancelJoinRequest(membershipId, rescuerId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã hủy yêu cầu gia nhập đội cứu hộ"));
+    }
+
+    /**
+     * API Đội trưởng phê duyệt yêu cầu xin gia nhập đội
+     */
+    @PostMapping("/join-requests/{membershipId}/approve")
+    public ResponseEntity<ApiResponse<MemberResponse>> approveJoinRequest(
+            @PathVariable("membershipId") UUID membershipId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID leaderId
+    ) {
+        MemberResponse response = campaignMemberService.approveJoinRequest(membershipId, leaderId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Duyệt yêu cầu gia nhập đội thành công"));
+    }
+
+    /**
+     * API Đội trưởng từ chối yêu cầu xin gia nhập đội
+     */
+    @PostMapping("/join-requests/{membershipId}/reject")
+    public ResponseEntity<ApiResponse<MemberResponse>> rejectJoinRequest(
+            @PathVariable("membershipId") UUID membershipId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID leaderId
+    ) {
+        MemberResponse response = campaignMemberService.rejectJoinRequest(membershipId, leaderId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối yêu cầu gia nhập đội"));
     }
 }

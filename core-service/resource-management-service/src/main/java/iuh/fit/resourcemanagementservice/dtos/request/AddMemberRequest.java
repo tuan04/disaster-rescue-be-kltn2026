@@ -22,6 +22,7 @@ public record AddMemberRequest(
         @NotNull(message = "Vai trò không được để trống")
         TeamRole roleInTeam,
 
+
         SexEnum sex
 ) {
 }

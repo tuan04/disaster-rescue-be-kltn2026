@@ -28,8 +28,8 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
                 allowCredentials: true
-          default-filters:
-            - JwtAuthFilter
+
+
           routes:
             - id: user-service
               uri: lb://USER-SERVICE
@@ -63,5 +63,11 @@ eureka:
   instance:
     prefer-ip-address: true
 rsa:
-  private-key-path: ${RSA_PRIVATE_PATH}
   public-key-path: ${RSA_PUBLIC_PATH}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Tắt HTTP Actuator; không ảnh hưởng route tới các service.
+        exclude: "*"

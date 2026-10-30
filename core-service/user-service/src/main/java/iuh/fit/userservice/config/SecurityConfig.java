@@ -149,6 +149,36 @@ public class SecurityConfig {
                 .build();
     }
 
+    @Bean
+    @Order(2)
+    public SecurityFilterChain publicAuthSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher(
+                        "/api/v1/auth/**"
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+                .requestCache(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/verify-otp",
+                                "/api/v1/auth/refresh-token",
+                                "/api/v1/auth/forgot-password/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .build();
+    }
+
 
     private Converter<Jwt, AbstractAuthenticationToken> userAuthenticationConverter() {
 

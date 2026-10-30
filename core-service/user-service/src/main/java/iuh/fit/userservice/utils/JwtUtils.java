@@ -212,7 +212,7 @@ public class JwtUtils {
     public boolean isTokenExpired(String token) {
         try {
             return extractClaim(token, Claims::getExpiration).before(new Date());
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             return true;
         }
     }

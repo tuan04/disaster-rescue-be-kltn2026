@@ -48,6 +48,7 @@ public class GrpcStatusMapper {
             case FORBIDDEN -> Status.PERMISSION_DENIED.withDescription(message);
             case CONFLICT -> Status.FAILED_PRECONDITION.withDescription(message);
             case BAD_GATEWAY -> Status.UNAVAILABLE.withDescription(message);
+            case TOO_MANY_REQUESTS -> Status.RESOURCE_EXHAUSTED.withDescription(message);
             case INTERNAL_SERVER_ERROR -> {
                 log.error("BusinessException with INTERNAL_SERVER_ERROR: {}", message);
                 yield Status.INTERNAL.withDescription("Internal server error");

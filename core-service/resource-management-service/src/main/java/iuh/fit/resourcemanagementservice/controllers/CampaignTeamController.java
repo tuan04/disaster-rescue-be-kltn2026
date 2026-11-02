@@ -8,6 +8,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamByLeaderRequest;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamStatusRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamSummaryResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
@@ -137,6 +138,15 @@ public class CampaignTeamController {
             @Valid @RequestBody UpdateTeamRequest request) {
         TeamResponse response = campaignTeamService.updateTeam(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin đội cứu hộ thành công"));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<TeamResponse>> updateTeamStatus(
+            @PathVariable("id") UUID id,
+            @RequestHeader("X-User-Id") UUID leaderId,
+            @Valid @RequestBody UpdateTeamStatusRequest request) {
+        TeamResponse response = campaignTeamService.updateTeamStatus(id, leaderId, request.status());
+        return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật trạng thái đội cứu hộ thành công"));
     }
 
     @PostMapping("/location")

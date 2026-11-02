@@ -81,6 +81,7 @@ public class CampaignMemberService {
         return campaignMemberRepository.existsActiveAcceptedMembership(memberId);
     }
 
+
     @Transactional(readOnly = true)
     public Optional<CampaignTeam> findActiveTeamByMemberId(UUID memberId) {
         if (memberId == null) {
@@ -205,7 +206,6 @@ public class CampaignMemberService {
                 ErrorCode.RESOURCE_NOT_FOUND,
                 "Thành viên không tồn tại trong đội này"
         ));
-
 
         if (member.getRoleInTeam() == TeamRole.LEADER) {
             throw new BusinessException(

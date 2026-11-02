@@ -22,6 +22,10 @@ import java.util.UUID;
 public interface CampaignTeamRepository extends JpaRepository<CampaignTeam, UUID>, JpaSpecificationExecutor<CampaignTeam> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT team FROM CampaignTeam team WHERE team.id = :id")
+    Optional<CampaignTeam> findByIdForUpdate(UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT team FROM CampaignTeam team WHERE team.id = :id")
     Optional<CampaignTeam> findByIdForReview(UUID id);
 
     @Query("""

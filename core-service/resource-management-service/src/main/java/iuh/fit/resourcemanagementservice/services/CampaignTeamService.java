@@ -3,6 +3,7 @@ package iuh.fit.resourcemanagementservice.services;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.kafka.dto.TeamLocationUpdatedEvent;
+import iuh.fit.common.kafka.dto.TeamApprovalEvent;
 import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
 import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
@@ -15,6 +16,7 @@ import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.events.producer.LocationEventProducer;
+import iuh.fit.resourcemanagementservice.events.producer.TeamEventProducer;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +54,7 @@ public class CampaignTeamService {
     private final UserGrpcClient userGrpcClient;
     private final RedisService redisService;
     private final LocationEventProducer locationEventProducer;
+    private final TeamEventProducer teamEventProducer;
     private final TransactionTemplate transactionTemplate;
 
     public CampaignTeam findById(UUID campaignTeamID) {
@@ -73,9 +76,7 @@ public class CampaignTeamService {
 
         try {
             Campaign campaign = campaignService.findById(campaignId);
-            if (campaign.getStatus() != CampaignStatus.ACTIVE) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT, "Chiến dịch cứu hộ đã kết thúc");
-            }
+            requireActiveCampaign(campaign, ErrorCode.INVALID_INPUT, "Chiến dịch cứu hộ đã kết thúc");
 
             if (campaignTeamRepository.existsByCampaign_IdAndTeamNameIgnoreCaseAndStatusNotAndApprovalStatusNot(
                     campaignId, teamName, TeamStatus.DISBANDED, TeamApprovalStatus.REJECTED)) {
@@ -123,14 +124,23 @@ public class CampaignTeamService {
     @Transactional
     public TeamResponse approveTeam(UUID teamId, UUID reviewerId) {
         CampaignTeam team = findPendingTeamForReview(teamId);
-        if (team.getCampaign().getStatus() != CampaignStatus.ACTIVE) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Chiến dịch không còn hoạt động, không thể duyệt đội");
-        }
+        requireActiveCampaign(team.getCampaign(), ErrorCode.CONFLICT,
+                "Chiến dịch không còn hoạt động, không thể duyệt đội");
 
         team.setApprovalStatus(TeamApprovalStatus.APPROVED);
         team.setReviewedAt(LocalDateTime.now());
         team.setReviewedBy(reviewerId);
         team.setRejectionReason(null);
+
+        teamEventProducer.publishTeamApprovalEvent(new TeamApprovalEvent(
+                team.getId(),
+                team.getTeamName(),
+                team.getLeaderId(),
+                "APPROVED",
+                null,
+                LocalDateTime.now()
+        ));
+
         return campaignTeamMapper.toResponse(team);
     }
 
@@ -142,6 +152,16 @@ public class CampaignTeamService {
         team.setReviewedBy(reviewerId);
         team.setRejectionReason(request.reason().trim());
         campaignMemberService.cancelLeaderMembership(team);
+
+        teamEventProducer.publishTeamApprovalEvent(new TeamApprovalEvent(
+                team.getId(),
+                team.getTeamName(),
+                team.getLeaderId(),
+                "REJECTED",
+                request.reason().trim(),
+                LocalDateTime.now()
+        ));
+
         return campaignTeamMapper.toResponse(team);
     }
 
@@ -151,9 +171,7 @@ public class CampaignTeamService {
         if (team.getApprovalStatus() != TeamApprovalStatus.PENDING) {
             throw new BusinessException(ErrorCode.CONFLICT, "Yêu cầu thành lập đội đã được xét duyệt");
         }
-        if (team.getStatus() == TeamStatus.DISBANDED) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Đội đã giải tán, không thể xét duyệt");
-        }
+        requireNotDisbanded(team, "Đội đã giải tán, không thể xét duyệt");
         return team;
     }
 
@@ -164,21 +182,10 @@ public class CampaignTeamService {
     public TeamResponse disbandTeam(UUID teamId, UUID leaderId) {
         CampaignTeam team = findById(teamId);
 
-        if (leaderId == null || !team.getLeaderId().equals(leaderId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Không có quyền thực hiện thao tác này");
-        }
-
-        if (team.getStatus() == TeamStatus.DISBANDED) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Đội cứu hộ đã giải tán");
-        }
-
-        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Không thể giải tán đội cứu hộ chưa được phê duyệt");
-        }
-
-        if (team.getStatus() == TeamStatus.BUSY) {
-            throw new BusinessException(ErrorCode.CONFLICT, "Không thể giải tán đội đang thực hiện nhiệm vụ.");
-        }
+        requireLeader(team, leaderId, "Không có quyền thực hiện thao tác này");
+        requireNotDisbanded(team, "Đội cứu hộ đã giải tán");
+        requireApproved(team, "Không thể giải tán đội cứu hộ chưa được phê duyệt");
+        requireNotBusy(team, "Không thể giải tán đội đang thực hiện nhiệm vụ.");
 
         team.setStatus(TeamStatus.DISBANDED);
         CampaignTeam updatedTeam = campaignTeamRepository.save(team);
@@ -193,9 +200,7 @@ public class CampaignTeamService {
      */
     @Transactional(readOnly = true)
     public TeamResponse getMyActiveTeam(UUID userId) {
-        if (userId == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
-        }
+        requireAuthenticatedUser(userId);
 
         CampaignTeam team = campaignTeamRepository.findFirstByLeaderIdAndStatusNotAndApprovalStatusNot(
                 userId, TeamStatus.DISBANDED, TeamApprovalStatus.REJECTED)
@@ -258,12 +263,8 @@ public class CampaignTeamService {
      */
     @Transactional
     public TeamResponse updateTeam(UUID id, UpdateTeamRequest request) {
-        CampaignTeam existingTeam = campaignTeamRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy đội cứu hộ với ID: " + id));
+        CampaignTeam existingTeam = findTeamForUpdate(id);
 
-        if (request.status() != null) {
-            existingTeam.setStatus(request.status());
-        }
         if (request.vehicles() != null) {
             existingTeam.setVehicles(new ArrayList<>(request.vehicles()));
         }
@@ -279,6 +280,28 @@ public class CampaignTeamService {
 
         CampaignTeam updatedTeam = campaignTeamRepository.save(existingTeam);
         return campaignTeamMapper.toResponse(updatedTeam);
+    }
+
+    /** Đội trưởng đổi trạng thái hoạt động online/offline. */
+    @Transactional
+    public TeamResponse updateTeamStatus(UUID id, UUID leaderId, TeamStatus requestedStatus) {
+        requireAuthenticatedUser(leaderId);
+        if (requestedStatus != TeamStatus.READY && requestedStatus != TeamStatus.OFFLINE) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT,
+                    "Chỉ được chuyển giữa trạng thái sẵn sàng và ngoại tuyến");
+        }
+
+        CampaignTeam team = findTeamForUpdate(id);
+        requireLeader(team, leaderId, "Chỉ Đội trưởng mới có quyền thay đổi trạng thái hoạt động");
+        requireNotDisbanded(team, "Đội đã giải tán, không thể thay đổi trạng thái");
+        requireNotBusy(team, "Đội đang thực hiện nhiệm vụ, không thể bật/tắt nhận nhiệm vụ");
+        requireApproved(team, "Đội chưa được phê duyệt hoạt động");
+        requireActiveCampaign(team.getCampaign(), ErrorCode.CONFLICT, "Chiến dịch không còn hoạt động");
+
+        if (team.getStatus() != requestedStatus) {
+            team.setStatus(requestedStatus);
+        }
+        return campaignTeamMapper.toResponse(team);
     }
 
     /**
@@ -365,5 +388,48 @@ public class CampaignTeamService {
         }
 
         return campaignTeamRepository.findByIdInAndStatus(nearbyUserIds, TeamStatus.READY);
+    }
+
+    // Chỉ gọi trong transaction của nghiệp vụ cần cập nhật đội.
+    private CampaignTeam findTeamForUpdate(UUID id) {
+        return campaignTeamRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Không tìm thấy đội cứu hộ với ID: " + id));
+    }
+
+    private void requireAuthenticatedUser(UUID userId) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
+        }
+    }
+
+    private void requireLeader(CampaignTeam team, UUID userId, String message) {
+        if (!team.getLeaderId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, message);
+        }
+    }
+
+    private void requireNotDisbanded(CampaignTeam team, String message) {
+        if (team.getStatus() == TeamStatus.DISBANDED) {
+            throw new BusinessException(ErrorCode.CONFLICT, message);
+        }
+    }
+
+    private void requireApproved(CampaignTeam team, String message) {
+        if (team.getApprovalStatus() != TeamApprovalStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.CONFLICT, message);
+        }
+    }
+
+    private void requireNotBusy(CampaignTeam team, String message) {
+        if (team.getStatus() == TeamStatus.BUSY) {
+            throw new BusinessException(ErrorCode.CONFLICT, message);
+        }
+    }
+
+    private void requireActiveCampaign(Campaign campaign, ErrorCode errorCode, String message) {
+        if (campaign.getStatus() != CampaignStatus.ACTIVE) {
+            throw new BusinessException(errorCode, message);
+        }
     }
 }

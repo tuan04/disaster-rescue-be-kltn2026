@@ -17,6 +17,7 @@ import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.events.producer.LocationEventProducer;
 import iuh.fit.resourcemanagementservice.events.producer.TeamEventProducer;
+import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,9 +69,9 @@ public class CampaignTeamService {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Thiếu thông tin người tạo hoặc trưởng đội");
         }
 
-        String lockKey = "lock:team:create:" + leaderId;
-        boolean acquired = redisService.acquireLock(lockKey, 10);
-        if (!acquired) {
+        String lockKey = RedisService.RESCUER_MEMBERSHIP_LOCK_KEY + leaderId;
+        String lockToken = redisService.acquireLock(lockKey, 10);
+        if (lockToken == null) {
             throw new BusinessException(ErrorCode.CONFLICT, "Yêu cầu tạo đội đang được xử lý");
         }
 
@@ -117,7 +118,7 @@ public class CampaignTeamService {
         } catch (DataIntegrityViolationException ex) {
             throw new BusinessException(ErrorCode.CONFLICT, "Người dùng hiện đang hoạt động trong một đội cứu hộ khác");
         } finally {
-            redisService.releaseLock(lockKey);
+            redisService.releaseLock(lockKey, lockToken);
         }
     }
 
@@ -180,7 +181,7 @@ public class CampaignTeamService {
      */
     @Transactional
     public TeamResponse disbandTeam(UUID teamId, UUID leaderId) {
-        CampaignTeam team = findById(teamId);
+        CampaignTeam team = findTeamForUpdate(teamId);
 
         requireLeader(team, leaderId, "Không có quyền thực hiện thao tác này");
         requireNotDisbanded(team, "Đội cứu hộ đã giải tán");
@@ -271,15 +272,34 @@ public class CampaignTeamService {
         if (request.teamName() != null) {
             existingTeam.setTeamName(request.teamName().trim());
         }
-        if (request.leaderId() != null) {
-            existingTeam.setLeaderId(request.leaderId());
-        }
-        if (request.leaderPhone() != null && !request.leaderPhone().isBlank()) {
-            existingTeam.setLeaderPhone(request.leaderPhone().trim());
-        }
-
         CampaignTeam updatedTeam = campaignTeamRepository.save(existingTeam);
         return campaignTeamMapper.toResponse(updatedTeam);
+    }
+
+    @Transactional
+    public TeamResponse transferLeadership(UUID teamId, UUID currentLeaderId, UUID newLeaderId) {
+        requireAuthenticatedUser(currentLeaderId);
+        if (newLeaderId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Thiếu ID Đội trưởng mới");
+        }
+        if (currentLeaderId.equals(newLeaderId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Người được chọn đã là Đội trưởng");
+        }
+
+        CampaignTeam team = findTeamForUpdate(teamId);
+        requireLeader(team, currentLeaderId, "Chỉ Đội trưởng mới có quyền chuyển giao vai trò");
+        requireNotDisbanded(team, "Đội đã giải tán, không thể đổi đội trưởng");
+        requireApproved(team, "Đội chưa được phê duyệt, không thể đổi đội trưởng");
+        requireNotBusy(team, "Đội đang thực hiện nhiệm vụ, không thể đổi đội trưởng");
+        requireActiveCampaign(team.getCampaign(), ErrorCode.CONFLICT, "Chiến dịch không còn hoạt động");
+
+        CampaignMember newLeaderMember = campaignMemberService.transferLeaderRole(teamId, currentLeaderId, newLeaderId);
+
+        team.setLeaderId(newLeaderMember.getMemberId());
+        team.setLeaderName(newLeaderMember.getFullName());
+        team.setLeaderPhone(newLeaderMember.getPhone());
+
+        return campaignTeamMapper.toResponse(campaignTeamRepository.save(team));
     }
 
     /** Đội trưởng đổi trạng thái hoạt động online/offline. */

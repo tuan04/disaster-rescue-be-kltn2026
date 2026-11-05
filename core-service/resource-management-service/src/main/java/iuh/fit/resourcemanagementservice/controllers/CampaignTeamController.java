@@ -7,6 +7,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamByAdminRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.CreateTeamByLeaderRequest;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
+import iuh.fit.resourcemanagementservice.dtos.request.TransferLeaderRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateTeamStatusRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamResponse;
@@ -138,6 +139,15 @@ public class CampaignTeamController {
             @Valid @RequestBody UpdateTeamRequest request) {
         TeamResponse response = campaignTeamService.updateTeam(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin đội cứu hộ thành công"));
+    }
+
+    @PatchMapping("/{id}/leader")
+    public ResponseEntity<ApiResponse<TeamResponse>> transferLeadership(
+            @PathVariable("id") UUID id,
+            @RequestHeader("X-User-Id") UUID currentLeaderId,
+            @Valid @RequestBody TransferLeaderRequest request) {
+        TeamResponse response = campaignTeamService.transferLeadership(id, currentLeaderId, request.newLeaderId());
+        return ResponseEntity.ok(ApiResponse.success(response, "Chuyển giao vai trò Đội trưởng thành công"));
     }
 
     @PatchMapping("/{id}/status")

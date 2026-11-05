@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +70,23 @@ public class CampaignMemberService {
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy trưởng đội trong danh sách thành viên"));
         leaderMember.setMembershipStatus(MembershipStatus.CANCELLED);
+    }
+
+    @Transactional
+    public CampaignMember transferLeaderRole(UUID teamId, UUID currentLeaderId, UUID newLeaderId) {
+        CampaignMember newLeaderMember = campaignMemberRepository.findByCampaignTeam_IdAndMemberId(teamId, newLeaderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Thành viên không thuộc đội"));
+        if (newLeaderMember.getMembershipStatus() != MembershipStatus.ACCEPTED) {
+            throw new BusinessException(ErrorCode.CONFLICT, "Chỉ có thể chuyển giao cho thành viên chính thức");
+        }
+
+        CampaignMember oldLeaderMember = campaignMemberRepository.findByCampaignTeam_IdAndMemberId(teamId, currentLeaderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy thông tin Đội trưởng hiện tại trong đội"));
+
+        oldLeaderMember.setRoleInTeam(TeamRole.MEMBER);
+        newLeaderMember.setRoleInTeam(TeamRole.LEADER);
+        campaignMemberRepository.save(oldLeaderMember);
+        return campaignMemberRepository.save(newLeaderMember);
     }
 
     @Transactional(readOnly = true)
@@ -255,9 +271,9 @@ public class CampaignMemberService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
         }
 
-        String lockKey = "lock:rescuer:membership:" + rescuerId;
-        boolean acquired = redisService.acquireLock(lockKey, 5);
-        if (!acquired) {
+        String lockKey = RedisService.RESCUER_MEMBERSHIP_LOCK_KEY + rescuerId;
+        String lockToken = redisService.acquireLock(lockKey, 5);
+        if (lockToken == null) {
             throw new BusinessException(ErrorCode.CONFLICT, "Đã gửi yêu cầu chấp nhận lời mời");
         }
 
@@ -282,7 +298,7 @@ public class CampaignMemberService {
                 return campaignMemberMapper.toResponse(saved);
             });
         } finally {
-            redisService.releaseLock(lockKey);
+            redisService.releaseLock(lockKey, lockToken);
         }
     }
 
@@ -409,9 +425,9 @@ public class CampaignMemberService {
         CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Yêu cầu gia nhập đội không tồn tại"));
 
-        String lockKey = "lock:rescuer:membership:" + member.getMemberId();
-        boolean acquired = redisService.acquireLock(lockKey, 5);
-        if (!acquired) {
+        String lockKey = RedisService.RESCUER_MEMBERSHIP_LOCK_KEY + member.getMemberId();
+        String lockToken = redisService.acquireLock(lockKey, 5);
+        if (lockToken == null) {
             throw new BusinessException(ErrorCode.CONFLICT, "Đang duyệt yêu cầu gia nhập");
         }
 
@@ -437,7 +453,7 @@ public class CampaignMemberService {
                 return campaignMemberMapper.toResponse(saved);
             });
         } finally {
-            redisService.releaseLock(lockKey);
+            redisService.releaseLock(lockKey, lockToken);
         }
     }
 

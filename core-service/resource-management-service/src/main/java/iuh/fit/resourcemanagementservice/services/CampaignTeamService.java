@@ -3,7 +3,7 @@ package iuh.fit.resourcemanagementservice.services;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.kafka.dto.TeamLocationUpdatedEvent;
-import iuh.fit.common.kafka.dto.TeamApprovalEvent;
+import iuh.fit.common.kafka.dto.TeamMemberEventType;
 import iuh.fit.resourcemanagementservice.dtos.redis.TeamLocation;
 import iuh.fit.resourcemanagementservice.dtos.request.RejectTeamRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.TeamLocationRequest;
@@ -133,14 +133,14 @@ public class CampaignTeamService {
         team.setReviewedBy(reviewerId);
         team.setRejectionReason(null);
 
-        teamEventProducer.publishTeamApprovalEvent(new TeamApprovalEvent(
-                team.getId(),
-                team.getTeamName(),
+        teamEventProducer.sendTeamEvent(
+                team,
+                TeamMemberEventType.APPROVED,
                 team.getLeaderId(),
-                "APPROVED",
-                null,
-                LocalDateTime.now()
-        ));
+                reviewerId,
+                "Ban Quản Lý",
+                String.format("Đội cứu hộ \"%s\" của bạn đã được Ban quản lý phê duyệt hoạt động.", team.getTeamName())
+        );
 
         return campaignTeamMapper.toResponse(team);
     }
@@ -154,14 +154,17 @@ public class CampaignTeamService {
         team.setRejectionReason(request.reason().trim());
         campaignMemberService.cancelLeaderMembership(team);
 
-        teamEventProducer.publishTeamApprovalEvent(new TeamApprovalEvent(
-                team.getId(),
-                team.getTeamName(),
+        String reason = (request != null && request.reason() != null && !request.reason().isBlank())
+                ? request.reason().trim()
+                : "Không có lý do cụ thể";
+        teamEventProducer.sendTeamEvent(
+                team,
+                TeamMemberEventType.REJECTED,
                 team.getLeaderId(),
-                "REJECTED",
-                request.reason().trim(),
-                LocalDateTime.now()
-        ));
+                reviewerId,
+                "Ban Quản Lý",
+                String.format("Yêu cầu thành lập đội \"%s\" đã bị từ chối. Lý do: %s", team.getTeamName(), reason)
+        );
 
         return campaignTeamMapper.toResponse(team);
     }
@@ -192,6 +195,16 @@ public class CampaignTeamService {
         CampaignTeam updatedTeam = campaignTeamRepository.save(team);
 
         redisService.deleteLocation(teamId);
+
+        List<UUID> memberUserIds = campaignMemberService.getAcceptedMemberUserIds(teamId);
+        teamEventProducer.sendTeamEventToUsers(
+                updatedTeam,
+                TeamMemberEventType.DISBANDED,
+                memberUserIds,
+                leaderId,
+                updatedTeam.getLeaderName(),
+                String.format("Đội cứu hộ \"%s\" đã chính thức giải tán.", updatedTeam.getTeamName())
+        );
 
         return campaignTeamMapper.toResponse(updatedTeam);
     }
@@ -293,13 +306,25 @@ public class CampaignTeamService {
         requireNotBusy(team, "Đội đang thực hiện nhiệm vụ, không thể đổi đội trưởng");
         requireActiveCampaign(team.getCampaign(), ErrorCode.CONFLICT, "Chiến dịch không còn hoạt động");
 
+        String oldLeaderName = team.getLeaderName();
         CampaignMember newLeaderMember = campaignMemberService.transferLeaderRole(teamId, currentLeaderId, newLeaderId);
 
         team.setLeaderId(newLeaderMember.getMemberId());
         team.setLeaderName(newLeaderMember.getFullName());
         team.setLeaderPhone(newLeaderMember.getPhone());
 
-        return campaignTeamMapper.toResponse(campaignTeamRepository.save(team));
+        CampaignTeam savedTeam = campaignTeamRepository.save(team);
+
+        teamEventProducer.sendTeamEvent(
+                savedTeam,
+                TeamMemberEventType.LEADER_TRANSFERRED,
+                newLeaderId,
+                currentLeaderId,
+                oldLeaderName,
+                String.format("Bạn đã được bổ nhiệm làm Đội trưởng mới của đội cứu hộ \"%s\".", savedTeam.getTeamName())
+        );
+
+        return campaignTeamMapper.toResponse(savedTeam);
     }
 
     /** Đội trưởng đổi trạng thái hoạt động online/offline. */

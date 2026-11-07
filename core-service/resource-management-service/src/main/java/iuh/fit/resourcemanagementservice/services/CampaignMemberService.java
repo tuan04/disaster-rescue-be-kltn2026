@@ -17,6 +17,8 @@ import iuh.fit.resourcemanagementservice.enums.MembershipStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
 import iuh.fit.resourcemanagementservice.repositories.CampaignMemberRepository;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
+import iuh.fit.common.kafka.dto.TeamMemberEventType;
+import iuh.fit.resourcemanagementservice.events.producer.TeamEventProducer;
 import iuh.fit.resourcemanagementservice.mappers.CampaignMemberMapper;
 import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
@@ -30,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +47,7 @@ public class CampaignMemberService {
     private final CampaignMemberMapper campaignMemberMapper;
     private final UserGrpcClient userGrpcClient;
     private final RedisService redisService;
+    private final TeamEventProducer teamEventProducer;
 
     private final TransactionTemplate transactionTemplate;
 
@@ -168,7 +172,7 @@ public class CampaignMemberService {
 
         final Map<UUID, CampaignMember> finalExistingMap = existingMemberMap;
 
-        return transactionTemplate.execute(status -> {
+        List<CampaignMember> savedMembers = transactionTemplate.execute(status -> {
             List<CampaignMember> entitiesToSave = new ArrayList<>();
 
             for (AddMemberRequest mReq : request.members()) {
@@ -196,9 +200,25 @@ public class CampaignMemberService {
                 }
             }
 
-            List<CampaignMember> savedMembers = campaignMemberRepository.saveAll(entitiesToSave);
-            return savedMembers.stream().map(campaignMemberMapper::toResponse).toList();
+            return campaignMemberRepository.saveAll(entitiesToSave);
         });
+
+        if (savedMembers != null) {
+            List<UUID> invitedUserIds = savedMembers.stream()
+                    .filter(m -> m.getMemberId() != null && m.getMembershipStatus() == MembershipStatus.INVITED)
+                    .map(CampaignMember::getMemberId)
+                    .toList();
+            teamEventProducer.sendTeamEventToUsers(
+                    team,
+                    TeamMemberEventType.INVITED,
+                    invitedUserIds,
+                    currentUserId,
+                    team.getLeaderName(),
+                    String.format("Đội trưởng %s đã mời bạn gia nhập đội cứu hộ \"%s\"", team.getLeaderName(), team.getTeamName())
+            );
+        }
+
+        return savedMembers == null ? List.of() : savedMembers.stream().map(campaignMemberMapper::toResponse).toList();
     }
 
     @Transactional
@@ -236,6 +256,15 @@ public class CampaignMemberService {
 
         member.setMembershipStatus(MembershipStatus.CANCELLED);
         campaignMemberRepository.save(member);
+
+        teamEventProducer.sendTeamEvent(
+                team,
+                TeamMemberEventType.MEMBER_REMOVED,
+                member.getMemberId(),
+                currentUserId,
+                team.getLeaderName(),
+                String.format("Bạn đã được mời rời khỏi Đội cứu hộ \"%s\".", team.getTeamName())
+        );
     }
 
     @Transactional(readOnly = true)
@@ -278,7 +307,7 @@ public class CampaignMemberService {
         }
 
         try {
-            return transactionTemplate.execute(status -> {
+            CampaignMember saved = transactionTemplate.execute(status -> {
                 CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Lời mời tham gia đội không tồn tại"));
 
@@ -291,12 +320,25 @@ public class CampaignMemberService {
                 validateRescuerAvailability(rescuerId, team);
 
                 member.setMembershipStatus(MembershipStatus.ACCEPTED);
-                CampaignMember saved = campaignMemberRepository.save(member);
+                CampaignMember result = campaignMemberRepository.save(member);
 
                 campaignMemberRepository.cancelOtherPendingInvitations(rescuerId, membershipId);
 
-                return campaignMemberMapper.toResponse(saved);
+                return result;
             });
+
+            if (saved != null) {
+                teamEventProducer.sendTeamEvent(
+                        saved.getCampaignTeam(),
+                        TeamMemberEventType.INVITATION_ACCEPTED,
+                        saved.getCampaignTeam().getLeaderId(),
+                        rescuerId,
+                        saved.getFullName(),
+                        String.format("%s đã chấp nhận lời mời và gia nhập đội \"%s\".", saved.getFullName(), saved.getCampaignTeam().getTeamName())
+                );
+            }
+
+            return campaignMemberMapper.toResponse(saved);
         } finally {
             redisService.releaseLock(lockKey, lockToken);
         }
@@ -308,7 +350,7 @@ public class CampaignMemberService {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Thiếu thông tin người dùng");
         }
 
-        CampaignMember member = campaignMemberRepository.findById(membershipId)
+        CampaignMember member = campaignMemberRepository.findByIdWithTeamAndCampaign(membershipId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Lời mời tham gia đội không tồn tại"));
 
         if (!rescuerId.equals(member.getMemberId()) || member.getMembershipStatus() != MembershipStatus.INVITED) {
@@ -317,6 +359,15 @@ public class CampaignMemberService {
 
         member.setMembershipStatus(MembershipStatus.DECLINED);
         CampaignMember saved = campaignMemberRepository.save(member);
+
+        teamEventProducer.sendTeamEvent(
+                saved.getCampaignTeam(),
+                TeamMemberEventType.INVITATION_DECLINED,
+                saved.getCampaignTeam().getLeaderId(),
+                rescuerId,
+                saved.getFullName(),
+                String.format("%s đã từ chối lời mời gia nhập đội \"%s\".", saved.getFullName(), saved.getCampaignTeam().getTeamName())
+        );
 
         return campaignMemberMapper.toResponse(saved);
     }
@@ -389,6 +440,16 @@ public class CampaignMemberService {
         }
 
         CampaignMember saved = campaignMemberRepository.save(memberToSave);
+
+        teamEventProducer.sendTeamEvent(
+                team,
+                TeamMemberEventType.JOIN_REQUESTED,
+                team.getLeaderId(),
+                rescuerId,
+                saved.getFullName(),
+                String.format("%s đã gửi yêu cầu gia nhập đội cứu hộ \"%s\".", saved.getFullName(), team.getTeamName())
+        );
+
         return campaignMemberMapper.toResponse(saved);
     }
 
@@ -432,7 +493,7 @@ public class CampaignMemberService {
         }
 
         try {
-            return transactionTemplate.execute(status -> {
+            CampaignMember saved = transactionTemplate.execute(status -> {
                 CampaignTeam team = member.getCampaignTeam();
                 if (!leaderId.equals(team.getLeaderId())) {
                     throw new BusinessException(ErrorCode.FORBIDDEN, "Chỉ Đội trưởng mới có quyền duyệt yêu cầu gia nhập");
@@ -446,12 +507,25 @@ public class CampaignMemberService {
                 validateRescuerAvailability(member.getMemberId(), team);
 
                 member.setMembershipStatus(MembershipStatus.ACCEPTED);
-                CampaignMember saved = campaignMemberRepository.save(member);
+                CampaignMember result = campaignMemberRepository.save(member);
 
                 campaignMemberRepository.cancelOtherPendingInvitations(member.getMemberId(), membershipId);
 
-                return campaignMemberMapper.toResponse(saved);
+                return result;
             });
+
+            if (saved != null) {
+                teamEventProducer.sendTeamEvent(
+                        saved.getCampaignTeam(),
+                        TeamMemberEventType.JOIN_APPROVED,
+                        saved.getMemberId(),
+                        leaderId,
+                        saved.getCampaignTeam().getLeaderName(),
+                        String.format("Yêu cầu gia nhập đội cứu hộ \"%s\" của bạn đã được phê duyệt!", saved.getCampaignTeam().getTeamName())
+                );
+            }
+
+            return campaignMemberMapper.toResponse(saved);
         } finally {
             redisService.releaseLock(lockKey, lockToken);
         }
@@ -481,7 +555,25 @@ public class CampaignMemberService {
         member.setMembershipStatus(MembershipStatus.DECLINED);
         CampaignMember saved = campaignMemberRepository.save(member);
 
+        teamEventProducer.sendTeamEvent(
+                saved.getCampaignTeam(),
+                TeamMemberEventType.JOIN_REJECTED,
+                saved.getMemberId(),
+                leaderId,
+                saved.getCampaignTeam().getLeaderName(),
+                String.format("Yêu cầu gia nhập đội cứu hộ \"%s\" của bạn đã bị từ chối.", saved.getCampaignTeam().getTeamName())
+        );
+
         return campaignMemberMapper.toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> getAcceptedMemberUserIds(UUID teamId) {
+        return campaignMemberRepository.findMembersByTeamIdAndStatus(teamId, MembershipStatus.ACCEPTED)
+                .stream()
+                .map(CampaignMember::getMemberId)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private CampaignTeam findTeamById(UUID teamId) {

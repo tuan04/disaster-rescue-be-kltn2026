@@ -93,6 +93,18 @@ public class SecurityConfig {
                                 "/api/v1/users/upgrade-rescuer-accept/{id}"
                         ).hasRole("ADMIN")
 
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/users"
+                        ).hasRole("ADMIN")
+
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/v1/users/{userId}"
+                        ).hasRole("ADMIN")
+
                         // Người dân chỉ được gửi yêu cầu nâng cấp cho chính mình.
                         .requestMatchers(
                                 HttpMethod.PATCH,

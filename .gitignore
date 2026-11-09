@@ -75,3 +75,7 @@ postgres_data/
 
 **/src/main/resources/keys
 
+
+docs/**
+out/**
+

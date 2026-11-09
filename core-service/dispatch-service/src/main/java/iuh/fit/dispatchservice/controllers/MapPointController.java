@@ -1,15 +1,13 @@
 package iuh.fit.dispatchservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.dtos.request.*;
-import iuh.fit.dispatchservice.dtos.response.HazardDetailResponse;
-import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
-import iuh.fit.dispatchservice.dtos.response.MapPointRes;
-import iuh.fit.dispatchservice.dtos.response.SafePointDetailResponse;
-import iuh.fit.dispatchservice.dtos.response.WarehouseDetailResponse;
+import iuh.fit.dispatchservice.dtos.response.*;
 import iuh.fit.dispatchservice.enums.EmergencyLevel;
 import iuh.fit.dispatchservice.enums.RequestSource;
 import iuh.fit.dispatchservice.services.MapPointService;
+import iuh.fit.dispatchservice.services.RescueService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MapPointController {
     private final MapPointService mapPointService;
+    private final RescueService queryService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<MapPointRes>>> getAllMapPoints(
@@ -144,6 +143,23 @@ public class MapPointController {
                 mapPointService.updateHazardReport(id, request, null),
                 "Cập nhật báo cáo hiểm họa thành công"
         ));
+    }
+
+
+
+    @GetMapping("sos-requests")
+    public ResponseEntity<ApiResponse<PageResponse<RescueRequestListResponse>>> getRequests(
+            @Valid @ModelAttribute RescueRequestFilterRequest request,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        PageResponse<RescueRequestListResponse> response = queryService.getRequests(request, pageable.getPageNumber(), pageable.getPageSize());
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response,
+                        "Lấy danh sách yêu cầu cứu hộ thành công"
+                )
+        );
     }
 
 }

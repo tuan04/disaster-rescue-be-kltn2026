@@ -39,27 +39,6 @@ public class JwtUtils {
 
 
 
-
-    private String buildToken(Map<String,Object> claims, String subject, long expiration){
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(privateKey, SignatureAlgorithm.RS256)
-                .compact();
-    }
-
-    public String generateResetToken(String phone, UUID userId){
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("id", userId);
-        return buildToken(claims, phone, RESET_PASSWORD_TOKEN_EXPIRATION);
-    }
-
-
-
-
-
     private Claims extractAllClaims(String token){
         return Jwts.parserBuilder()
                 .setSigningKey(publicKey)
@@ -74,25 +53,6 @@ public class JwtUtils {
     }
 
 
-    public boolean isTokenExpired(String token) {
-        try {
-            return extractClaim(token, Claims::getExpiration).before(new Date());
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            return true;
-        }
-    }
-
-    public Long extractTimeRemaining(String token) {
-        Date expirationDate = extractExpiration(token);
-        Long currentTimeMillis = System.currentTimeMillis();
-        return expirationDate.getTime() - currentTimeMillis;
-    }
-
-
-    public String extractPhone(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
     public UUID extractId(String token) {
         final Claims claims = extractAllClaims(token);
         Object id = claims.get("id");
@@ -100,9 +60,11 @@ public class JwtUtils {
         return id instanceof String ? UUID.fromString((String) id) : (UUID) id;
     }
 
-    public String extractFullName(String token) {
+    public String extractRole(String token) {
         final Claims claims = extractAllClaims(token);
-        return claims.get("fullName", String.class);
+        Object roleObj = claims.get("role");
+        if (roleObj == null) return null;
+        return roleObj.toString();
     }
 
 

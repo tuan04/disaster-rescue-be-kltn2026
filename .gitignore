@@ -29,13 +29,48 @@ logs/
 .settings
 .sts4-cache
 
-# environtment
+# Environment variables & secrets
 .env
+.env.*
 .env.local
-**/ .env
-**/ .env.local
+**/.env
+**/.env.*
+**/.env.local
+!.env.example
+!**/.env.example
+
+# Node.js dependencies & package managers
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Facebook Collector & Playwright (Bảo mật thông tin đăng nhập, session, cookie)
+.auth/
+**/.auth/
+*.cookies
+*.session
+cookies.json
+**/cookies.json
+storageState.json
+**/storageState.json
+
+# Playwright cache, browser artifacts & test reports
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+blob-report/
+**/blob-report/
+.playwright/
+**/.playwright/
+playwright/.cache/
 
 # Loại bỏ rác dữ liệu của Database nếu cấu hình map ổ đĩa Docker ra ngoài
 docker/data/
 mysql_data/
 postgres_data/
+
+

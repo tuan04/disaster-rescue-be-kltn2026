@@ -1,5 +1,6 @@
 package iuh.fit.resourcemanagementservice.repositories;
 
+import iuh.fit.resourcemanagementservice.dtos.response.TeamMemberUserResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignMember;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -110,4 +111,18 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
           AND c.status = iuh.fit.resourcemanagementservice.enums.CampaignStatus.ACTIVE
     """)
     Optional<CampaignTeam> findActiveTeamByMemberId(@Param("memberId") UUID memberId);
+    void deleteByCampaignTeam_IdAndMemberId(UUID campaignTeamId, UUID memberId);
+
+
+    @Query("""
+        SELECT
+            member.campaignTeam.id AS teamId,
+            member.memberId AS userId
+        FROM CampaignMember member
+        WHERE member.campaignTeam.id IN :teamIds
+        """)
+    List<TeamMemberUserResponse> findRecipientUsersByTeamIds(
+            @Param("teamIds") Collection<UUID> teamIds
+    );
+
 }

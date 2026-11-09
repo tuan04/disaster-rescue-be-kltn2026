@@ -79,7 +79,7 @@ public class NotificationService {
                 ? event.radiusMeters()
                 : DEFAULT_RADIUS_METERS;
 
-        List<String> teamIds = locationTrackingService.findUsersInRadius(
+        List<String> teamIds = locationTrackingService.findTeamsInRadius(
                 event.longitude(),
                 event.latitude(),
                 radius

@@ -7,7 +7,6 @@ import iuh.fit.resourcemanagementservice.dtos.response.TeamRecipientsResult;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import iuh.fit.resourcemanagementservice.repositories.CampaignMemberRepository;
 import iuh.fit.resourcemanagementservice.repositories.CampaignTeamRepository;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

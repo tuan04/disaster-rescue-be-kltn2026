@@ -1,6 +1,7 @@
 package iuh.fit.resourcemanagementservice.entity;
 
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
+import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -25,15 +26,28 @@ public class CampaignTeam {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campaign_id", insertable = false, updatable = false)
+    @JoinColumn(name = "campaign_id", nullable = false)
     private Campaign campaign;
-
-    @Column(name = "total_participants")
-    private Integer totalParticipants;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private TeamStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false, length = 20)
+    private TeamApprovalStatus approvalStatus;
+
+    @Column(name = "requested_at", nullable = false)
+    private LocalDateTime requestedAt;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @Column(name = "reviewed_by")
+    private UUID reviewedBy;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -53,19 +67,25 @@ public class CampaignTeam {
     @Column(name = "leader_id", nullable = false)
     private UUID leaderId;
 
+    @Column(name = "leader_name")
+    private String leaderName;
+
     @Column(name = "leader_phone", nullable = false, length = 15)
     private String leaderPhone;
 
     @PrePersist
     protected void onCreate() {
+        if (approvalStatus == null) {
+            approvalStatus = TeamApprovalStatus.PENDING;
+        }
+        if (requestedAt == null) {
+            requestedAt = LocalDateTime.now();
+        }
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
         if (status == null) {
             status = TeamStatus.OFFLINE;
-        }
-        if (totalParticipants == null) {
-            totalParticipants = 0;
         }
         if (vehicles == null) {
             vehicles = new ArrayList<>();

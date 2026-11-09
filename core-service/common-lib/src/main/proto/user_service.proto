@@ -25,6 +25,7 @@ message UserInfoGrpcResponse {
     string id = 1;
     string full_name = 2;
     string phone_number = 3;
+    string role = 4;
+    string avatar_url = 5;
+    string sex = 6;
 }
-
-

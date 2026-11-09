@@ -7,7 +7,6 @@ import iuh.fit.notificationservice.dtos.TeamRecipientsSnapshot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.*;

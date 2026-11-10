@@ -125,16 +125,23 @@ public class SecurityConfig {
                                 "/api/v1/social-feeds/approval-policy"
                         ).hasRole("ADMIN")
 
-                        // Chỉ ADMIN được duyệt từng feed.
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/social-feeds/{feedId}/approve"
+                                HttpMethod.PATCH,
+                                "/api/v1/social-feeds/{feedId}"
                         ).hasRole("ADMIN")
+
 
                         // Chỉ ADMIN được thay đổi chính sách.
                         .requestMatchers(
                                 HttpMethod.PATCH,
                                 "/api/v1/social-feeds/approval-policy"
+                        ).hasRole("ADMIN")
+
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/social-feeds/{feedId}/approve",
+                                "/api/v1/social-feeds/{feedId}/reject"
                         ).hasRole("ADMIN")
 
 

@@ -1,7 +1,8 @@
 package iuh.fit.userservice.service;
 
-import iuh.fit.userservice.dto.request.UpgradeRescuerRequest;
+import iuh.fit.userservice.dto.request.AdminUserRequest;
 import iuh.fit.userservice.dto.request.UserFilterRequest;
+import iuh.fit.userservice.dto.response.AdminUserResponse;
 import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
 import iuh.fit.userservice.dto.response.UserListResponse;
 import iuh.fit.userservice.dto.response.UserProfileResponse;
@@ -24,4 +25,12 @@ public interface UserService {
     List<UserIDAndNameResponse> getUserNames();
 
     Page<UserListResponse> getAllUsersPage(UserFilterRequest request, Pageable pageable);
+
+
+    AdminUserResponse createUserByAdmin(AdminUserRequest request);
+
+    AdminUserResponse updateUser(
+            UUID userId,
+            AdminUserRequest request
+    );
 }

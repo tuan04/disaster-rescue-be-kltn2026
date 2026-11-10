@@ -23,6 +23,27 @@ public class JwtUtils {
     private static final long RESET_PASSWORD_TOKEN_EXPIRATION = 300000; // 5 p
     private static final long REFRESH_TOKEN_EXPIRATION = 604800000; // 7 ngày
 
+
+    // Định danh hệ thống phát hành token.
+    // Khi xác thực, backend phải kiểm tra token do đúng hệ thống này cấp.
+    public static final String TOKEN_ISSUER = "disaster-rescue";
+
+    // Access token dành cho các API nghiệp vụ của hệ thống.
+    public static final String API_AUDIENCE = "rescue-api";
+
+    // Refresh token và reset token chỉ dành cho user-service.
+    public static final String AUTH_AUDIENCE = "user-service";
+
+    // Tên claim dùng để xác định mục đích sử dụng token.
+    public static final String TOKEN_TYPE_CLAIM = "token_type";
+
+    // Các giá trị hợp lệ của claim token_type.
+    public static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    public static final String REFRESH_TOKEN_TYPE = "REFRESH";
+    public static final String RESET_TOKEN_TYPE = "RESET_PASSWORD";
+
+
+
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
 
@@ -37,38 +58,142 @@ public class JwtUtils {
         this.publicKey = KeyReaderUtils.getPublicKeyFromString(publicKeyStr);
     }
 
-    private String buildToken(Map<String, Object> claims, String subject, long expiration) {
+
+    private String buildToken(
+            Map<String, Object> claims,
+            String subject,
+            long expirationMillis,
+            String tokenType,
+            String audience
+    ) {
+        // Lấy thời điểm hiện tại một lần để tính iat và exp thống nhất.
+        long now = System.currentTimeMillis();
+
         return Jwts.builder()
-                .setClaims(claims)
+                .setClaims(new HashMap<>(claims))
+
+                // iss: hệ thống phát hành token.
+                .setIssuer(TOKEN_ISSUER)
+
+                // aud: bên được phép nhận và sử dụng token.
+                .setAudience(audience)
+
+                // sub: giữ số điện thoại như code hiện tại của anh.
+                // User ID vẫn nằm trong claim "id".
                 .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+
+                // jti: mã riêng của mỗi token.
+                // Hai lần cấp token cho cùng người dùng vẫn có jti khác nhau.
+                .setId(UUID.randomUUID().toString())
+
+                // Claim riêng để phân biệt ACCESS, REFRESH và RESET_PASSWORD.
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
+
+                // iat: thời điểm cấp token.
+                .setIssuedAt(new Date(now))
+
+                // exp: thời điểm hết hạn.
+                // expirationMillis được tính bằng MILLISECOND.
+                .setExpiration(new Date(now + expirationMillis))
+
+                // Ký token bằng private key RSA của user-service.
+                // Service nhận token sẽ dùng public key để kiểm tra chữ ký.
                 .signWith(privateKey, SignatureAlgorithm.RS256)
+
+                // Chuyển thành chuỗi JWT để trả về client.
                 .compact();
     }
 
+
     public String generateResetToken(String phone, UUID userId) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("id", userId);
-        return buildToken(claims, phone, RESET_PASSWORD_TOKEN_EXPIRATION);
+
+        // Xác định tài khoản được phép đặt lại mật khẩu.
+        claims.put("id", userId.toString());
+
+        // Không cần thêm role hoặc teamId:
+        // reset token không được dùng để thực hiện nghiệp vụ.
+        return buildToken(
+                claims,
+                phone,
+
+                // Giữ thời hạn hiện tại: 5 phút.
+                RESET_PASSWORD_TOKEN_EXPIRATION,
+
+                // Chỉ dành cho thao tác đặt lại mật khẩu.
+                RESET_TOKEN_TYPE,
+
+                // Chỉ user-service được xử lý.
+                AUTH_AUDIENCE
+        );
     }
 
-    public String generateAccessToken(UserInfoResponse userInfoResponse) {
+    private Map<String, Object> buildUserClaims(
+            UserInfoResponse userInfo
+    ) {
+        // HashMap cho phép teamId là null khi người dùng chưa thuộc đội nào.
         Map<String, Object> claims = new HashMap<>();
-        claims.put("role", userInfoResponse.getRole());
-        claims.put("id", userInfoResponse.getId());
-        claims.put("fullName", userInfoResponse.getFullName());
-        claims.put("teamId", userInfoResponse.getTeamId());
-        return buildToken(claims, userInfoResponse.getPhone(), ACCESS_TOKEN_EXPIRATION);
+
+        // Lưu UUID dưới dạng String để các service đọc thống nhất.
+        claims.put("id", userInfo.getId().toString());
+
+        // Vai trò hiệu lực do backend xác định.
+        // Ví dụ: CITIZEN, RESCUER, LEADER, COORDINATOR, ADMIN.
+        claims.put("role", userInfo.getRole());
+
+        // Giữ thông tin đang được frontend sử dụng.
+        claims.put("fullName", userInfo.getFullName());
+
+        // Người dân hoặc người chưa được phân đội có thể không có teamId.
+        claims.put(
+                "teamId",
+                userInfo.getTeamId() == null
+                        ? null
+                        : userInfo.getTeamId().toString()
+        );
+
+        return claims;
     }
 
-    public String generateRefreshToken(UserInfoResponse userInfoResponse) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", userInfoResponse.getRole());
-        claims.put("id", userInfoResponse.getId());
-        claims.put("fullName", userInfoResponse.getFullName());
-        claims.put("teamId", userInfoResponse.getTeamId());
-        return buildToken(claims, userInfoResponse.getPhone(), REFRESH_TOKEN_EXPIRATION);
+
+    public String generateAccessToken(UserInfoResponse userInfo) {
+        // Chuẩn bị thông tin người dùng cần đưa vào token.
+        Map<String, Object> claims = buildUserClaims(userInfo);
+
+        return buildToken(
+                claims,
+                userInfo.getPhone(),
+
+                // Giữ thời hạn hiện tại: 15 phút.
+                ACCESS_TOKEN_EXPIRATION,
+
+                // Token này được dùng để gọi API nghiệp vụ.
+                ACCESS_TOKEN_TYPE,
+
+                // Các API backend là đối tượng nhận token.
+                API_AUDIENCE
+        );
+    }
+
+
+    public String generateRefreshToken(UserInfoResponse userInfo) {
+        // Giữ các claim hiện có để không làm thiếu dữ liệu
+        // mà controller refresh hiện tại đang đọc.
+        Map<String, Object> claims = buildUserClaims(userInfo);
+
+        return buildToken(
+                claims,
+                userInfo.getPhone(),
+
+                // Giữ thời hạn hiện tại: 7 ngày.
+                REFRESH_TOKEN_EXPIRATION,
+
+                // Token chỉ có mục đích xin access token mới.
+                REFRESH_TOKEN_TYPE,
+
+                // Chỉ user-service xử lý loại token này.
+                AUTH_AUDIENCE
+        );
     }
 
     private Claims extractAllClaims(String token) {
@@ -87,7 +212,7 @@ public class JwtUtils {
     public boolean isTokenExpired(String token) {
         try {
             return extractClaim(token, Claims::getExpiration).before(new Date());
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             return true;
         }
     }

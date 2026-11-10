@@ -56,7 +56,10 @@ public enum ErrorCode {
      * request nhưng Service phía sau (như user-service) đang bị sập hoặc không phản
      * hồi.
      */
-    BAD_GATEWAY(HttpStatus.BAD_GATEWAY, "502", "Bad gateway");
+    BAD_GATEWAY(HttpStatus.BAD_GATEWAY, "502", "Bad gateway"),
+
+
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "429", "Too many requests");
 
     private final HttpStatus httpStatus;
     private final String code;

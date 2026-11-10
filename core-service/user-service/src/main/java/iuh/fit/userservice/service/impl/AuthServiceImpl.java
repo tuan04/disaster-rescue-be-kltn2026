@@ -6,6 +6,8 @@ import iuh.fit.userservice.dto.request.*;
 import iuh.fit.userservice.dto.response.UserInfoResponse;
 import iuh.fit.userservice.entity.User;
 import iuh.fit.userservice.enums.RoleEnum;
+import iuh.fit.userservice.redis.LoginAttemptRedisService;
+import iuh.fit.userservice.redis.OtpRateLimitService;
 import iuh.fit.userservice.redis.OtpRedisService;
 import iuh.fit.userservice.repository.UserRepository;
 import iuh.fit.userservice.service.AuthService;
@@ -22,6 +24,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpRedisService otpRedisService;
+    private final LoginAttemptRedisService loginAttemptRedisService;
+    private final OtpRateLimitService otpRateLimitService;
 
     @Override
     @Transactional
@@ -39,6 +43,9 @@ public class AuthServiceImpl implements AuthService {
                 .isDeleted(false)
                 .build();
         User saveUser = userRepository.save(user);
+
+        otpRateLimitService.acquireForgotPasswordPermit(user.getPhone());
+
         otpRedisService.generateAndSaveOtp("opt:" + saveUser.getId());
 
         return saveUser;
@@ -61,15 +68,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public UserInfoResponse login(LoginRequest request) {
+        String phone = request.getPhoneNumber();
+
+        loginAttemptRedisService.checkAllowed(phone);
+
         User user = userRepository.findByPhone(request.getPhoneNumber());
         if (user == null) {
+            loginAttemptRedisService.recordFailure(phone);
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Invalid phone number or password");
         }
         boolean isPasswordMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
 
         if (!isPasswordMatch) {
+            loginAttemptRedisService.recordFailure(phone);
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Invalid phone number or password");
         }
+        loginAttemptRedisService.reset(phone);
+
         return UserInfoResponse.builder()
                 .id(user.getId())
                 .teamId(user.getVolunteerProfile() != null ? user.getVolunteerProfile().getTeamId() : null)
@@ -87,6 +102,9 @@ public class AuthServiceImpl implements AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Phone number not found");
         }
+
+        otpRateLimitService.acquireForgotPasswordPermit(user.getPhone());
+
         otpRedisService.generateAndSaveOtp("opt:" + user.getId());
         return UserInfoResponse.builder()
                 .id(user.getId())

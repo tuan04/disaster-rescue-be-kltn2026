@@ -1,4 +1,4 @@
-package iuh.fit.apigateway.utils;
+package iuh.fit.dispatchservice.utils;
 
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -8,26 +8,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 public class KeyReaderUtils {
-    /**
-     * Chuyển đổi chuỗi String (từ file private_java.pem) thành Object PrivateKey của Java
-     */
-    public static PrivateKey getPrivateKeyFromString(String key) throws Exception {
-        // 1. Dọn dẹp chuỗi: Xóa header, footer và các ký tự xuống dòng/khoảng trắng
-        String privateKeyPEM = key
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", ""); // Xóa mọi khoảng trắng và ký tự xuống dòng
-
-        // 2. Giải mã chuỗi Base64 thành mảng byte
-        byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
-
-        // 3. Dùng PKCS8 (chuẩn dành riêng cho Private Key) để tái tạo khóa
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA"); // Khai báo thuật toán RSA
-
-        return keyFactory.generatePrivate(keySpec);
-    }
-
     /**
      * Chuyển đổi chuỗi String (từ file public.pem) thành Object PublicKey của Java
      */

@@ -28,17 +28,21 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
                 allowCredentials: true
-          default-filters:
-            - JwtAuthFilter
+
+
           routes:
             - id: user-service
               uri: lb://USER-SERVICE
               predicates:
                 - Path=/api/v1/users/**, /api/v1/auth/**
+
             - id: dispatch-service
               uri: lb://DISPATCH-SERVICE
               predicates:
                 - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**, /api/v1/assignments/**, /api/v1/routes/**, /api/v1/locations/**
+
+
+
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:
@@ -55,6 +59,123 @@ spring:
               uri: lb:ws://NOTIFICATION-SERVICE
               predicates:
                 - Path=/ws, /ws/**
+            - id: map-read-rate-limited
+              order: -10
+              uri: lb://DISPATCH-SERVICE
+              predicates:
+                - Path=/api/v1/map-points/**
+                - Method=GET
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+
+            # cấu hình rate limit
+            - id: login-rate-limited
+              order: -10
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/v1/auth/login
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 5
+                    redis-rate-limiter.requestedTokens: 1
+
+            - id: sos-create-rate-limited
+              order: -10
+              uri: lb://DISPATCH-SERVICE
+              predicates:
+                - Path=/api/v1/sos-requests
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedTokens: 10
+
+            - id: otp-send-rate-limited
+              order: -10
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/v1/auth/forgot-password/send-otp
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@ipKeyResolver}"
+                    redis-rate-limiter.replenishRate: 1
+                    redis-rate-limiter.burstCapacity: 50
+                    redis-rate-limiter.requestedTokens: 10
+
+            - id: user-service
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/api/v1/users/**, /api/v1/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+
+
+            - id: dispatch-service
+              uri: lb://DISPATCH-SERVICE
+              predicates:
+                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**, /api/v1/assignments/**, /api/v1/routes/**, /api/v1/locations/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
+
+            - id: integration-service
+              uri: lb://INTEGRATION-SERVICE
+              predicates:
+                - Path=/api/v1/ai/**, /api/v1/news/**, /api/v1/sms/**, /api/v1/social-feeds/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 5
+                    redis-rate-limiter.requestedTokens: 1
+
+            - id: notification-service
+              uri: lb://NOTIFICATION-SERVICE
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+
+            - id: resource-management-service
+              uri: lb://RESOURCE-MANAGEMENT-SERVICE
+              predicates:
+                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/teams/**, /api/v1/campaign-warehouse-inventories/**, /api/v1/items/**, /api/v1/team-mobile-inventories/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+                    redis-rate-limiter.requestedTokens: 1
 
 eureka:
   client:
@@ -63,5 +184,11 @@ eureka:
   instance:
     prefer-ip-address: true
 rsa:
-  private-key-path: ${RSA_PRIVATE_PATH}
   public-key-path: ${RSA_PUBLIC_PATH}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Tắt HTTP Actuator; không ảnh hưởng route tới các service.
+        exclude: "*"

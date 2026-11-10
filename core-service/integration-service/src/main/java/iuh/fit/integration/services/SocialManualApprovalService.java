@@ -114,6 +114,47 @@ public class SocialManualApprovalService {
                 ));
     }
 
+    public SocialRawFeed reject(String feedId) {
+        if (feedId == null || feedId.isBlank()) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "ID feed không được để trống"
+            );
+        }
+
+        SocialRawFeed feed = feedRepository.findById(feedId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Không tìm thấy feed"
+                ));
+
+        // Gọi lại API với feed đã từ chối vẫn trả thành công.
+        if (feed.getStatus() == FeedStatus.REJECTED) {
+            return feed;
+        }
+
+        if (feed.getStatus() != FeedStatus.PENDING) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT,
+                    "Chỉ được từ chối feed đang chờ duyệt"
+            );
+        }
+
+        SocialRawFeed rejectedFeed = stateRepository.rejectIfPending(feedId);
+
+        if (rejectedFeed == null) {
+            throw new BusinessException(
+                    ErrorCode.CONFLICT,
+                    "Feed đã thay đổi trạng thái. Vui lòng tải lại"
+            );
+        }
+
+        return rejectedFeed;
+    }
+
+
+
+
     private SocialEvents.RescueData buildRescueData(SocialRawFeed feed) {
         // Không thể tạo yêu cầu cứu hộ nếu chưa có dữ liệu trích xuất.
         if (feed.getExtractedData() == null) {

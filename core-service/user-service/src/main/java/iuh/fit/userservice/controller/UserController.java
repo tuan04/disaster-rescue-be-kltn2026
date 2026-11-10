@@ -1,5 +1,8 @@
 package iuh.fit.userservice.controller;
 
+import iuh.fit.userservice.dto.request.AdminUserRequest;
+import iuh.fit.userservice.dto.response.AdminUserResponse;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import iuh.fit.common.response.ApiResponse;
 import iuh.fit.userservice.dto.request.UserFilterRequest;
@@ -12,6 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,11 +39,11 @@ public class UserController {
     }
 
 
-
-
     @GetMapping({ "/me", "/profile" })
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
-            @RequestHeader("X-User-Id") UUID userId) {
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
         return ResponseEntity.ok(ApiResponse.success(userService.getUserProfile(userId)));
     }
 
@@ -59,4 +65,31 @@ public class UserController {
     public ResponseEntity<ApiResponse<?>> upgradeToRescuerAccept(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.upgradeToRescuerRequestAccept(id)));
     }
+
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<AdminUserResponse>> createUser(
+            @Validated @RequestBody AdminUserRequest request
+    ) {
+        AdminUserResponse response =
+                userService.createUserByAdmin(request);
+
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PatchMapping("/{userId}")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> updateUser(
+            @PathVariable("userId") UUID userId,
+            @Valid @RequestBody AdminUserRequest request
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        userService.updateUser(userId, request)
+                )
+        );
+    }
+
+
+
+
 }

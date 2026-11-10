@@ -14,7 +14,6 @@ public interface WebSocketNotificationService {
      */
     void sendToUser(UUID userId, NotificationSocketMessage message);
 
-
     void sendToUsers(List<UUID> userIds, NotificationSocketMessage message);
 
     /**

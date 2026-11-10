@@ -10,8 +10,10 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +23,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RedisService {
+
+    public static final String RESCUER_MEMBERSHIP_LOCK_KEY = "lock:rescuer:membership:";
 
     private static final String TEAM_LOCATION_KEY = "team:location:";
     private static final String TEAM_LOCATION_KEY_GIS = "team:location_gis:";
@@ -105,5 +109,50 @@ public class RedisService {
             return teamLocation;
         }
         return objectMapper.convertValue(value, TeamLocation.class);
+    }
+
+    public void deleteLocation(UUID campaignTeamId) {
+        if (campaignTeamId == null) {
+            return;
+        }
+        String teamIdStr = campaignTeamId.toString();
+        redisTemplate.delete(TEAM_LOCATION_KEY + campaignTeamId);
+        stringRedisTemplate.delete(TEAM_LOCATION_KEY_GIS + campaignTeamId);
+        stringRedisTemplate.opsForGeo().remove(TEAM_LOCATION_KEY_GIS + "all", teamIdStr);
+    }
+
+    /**
+     * Lấy khóa phân tán Redis bằng lệnh nguyên tử SETNX kèm thời gian hết hạn (TTL)
+     */
+    public String acquireLock(String key, long timeoutSeconds) {
+        String token = UUID.randomUUID().toString();
+        Boolean success = stringRedisTemplate.opsForValue()
+                .setIfAbsent(key, token, Duration.ofSeconds(timeoutSeconds));
+        return Boolean.TRUE.equals(success) ? token : null;
+    }
+
+    /**
+     * Giải phóng khóa phân tán Redis
+     */
+    private static final String RELEASE_LOCK_SCRIPT =
+            "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+            "    return redis.call('del', KEYS[1]) " +
+            "else " +
+            "    return 0 " +
+            "end";
+
+    public void releaseLock(String key, String token) {
+        if (key == null || token == null) {
+            return;
+        }
+        stringRedisTemplate.execute(
+                new DefaultRedisScript<>(RELEASE_LOCK_SCRIPT, Long.class),
+                Collections.singletonList(key),
+                token
+        );
+    }
+
+    public void releaseLock(String key) {
+        stringRedisTemplate.delete(key);
     }
 }

@@ -43,4 +43,13 @@ public class CampaignController {
         CampaignResponse response = campaignService.updateCampaign(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật chiến dịch thành công"));
     }
+
+    /**
+     * API Lấy danh sách Chiến dịch đang hoạt động (ACTIVE)
+     */
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<java.util.List<CampaignResponse>>> getActiveCampaigns() {
+        java.util.List<CampaignResponse> response = campaignService.getActiveCampaigns();
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách chiến dịch đang hoạt động thành công"));
+    }
 }

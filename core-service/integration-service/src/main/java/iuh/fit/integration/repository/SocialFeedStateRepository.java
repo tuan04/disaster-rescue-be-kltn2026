@@ -6,6 +6,7 @@ import iuh.fit.integration.entity.SocialRawFeed;
 import iuh.fit.integration.enums.FeedStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -13,7 +14,9 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // Spring quản lý repository này.
 @Repository
@@ -268,6 +271,58 @@ public class SocialFeedStateRepository {
         );
 
         return result.getMatchedCount() == 1;
+    }
+
+
+    public SocialRawFeed rejectIfPending(String feedId) {
+        Query query = Query.query(
+                Criteria.where("id").is(feedId)
+                        .and("status").is(FeedStatus.PENDING)
+                        .and("approvalEventId").is(null)
+                        .and("approvalPayload").is(null)
+                        .and("publishState").is(null)
+        );
+
+        Update update = new Update()
+                .set("status", FeedStatus.REJECTED)
+                .set("approvalMode", "MANUAL")
+                .set("approvalReason", "Từ chối bởi quản trị viên")
+                .unset("autoNextCheckAt");
+
+        // Kiểm tra trạng thái và cập nhật trong một thao tác nguyên tử.
+        return mongoTemplate.findAndModify(
+                query,
+                update,
+                FindAndModifyOptions.options().returnNew(true),
+                SocialRawFeed.class
+        );
+    }
+
+
+
+    public SocialRawFeed updateExtractedDataIfUnchanged(
+            SocialRawFeed snapshot,
+            Map<String, Object> changes
+    ) {
+        Map<String, Object> extractedData = new HashMap<>();
+
+        if (snapshot.getExtractedData() != null) {
+            extractedData.putAll(snapshot.getExtractedData());
+        }
+
+        extractedData.putAll(changes);
+
+        Update update = new Update()
+                .set("extractedData", extractedData)
+                .set("autoNextCheckAt", Instant.now())
+                .unset("approvalReason");
+
+        return mongoTemplate.findAndModify(
+                unchangedPendingFeed(snapshot),
+                update,
+                FindAndModifyOptions.options().returnNew(true),
+                SocialRawFeed.class
+        );
     }
 
 

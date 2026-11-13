@@ -44,3 +44,7 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+rsa:
+  # Public key tương ứng với private key user-service dùng để ký JWT.
+  public-key-path: ${RSA_PUBLIC_PATH}

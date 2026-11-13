@@ -6,6 +6,8 @@ import iuh.fit.notificationservice.dtos.NotificationResponse;
 import iuh.fit.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -22,10 +24,12 @@ public class NotificationController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NotificationResponse>>> getAllNotifications(
-            @RequestHeader(value = "X-User-Id") UUID userId,
+            // Spring cung cấp JWT đã được xác thực.
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         PageResponse<NotificationResponse> response = notificationService.getNotificationsByUserId(userId, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -35,9 +39,10 @@ public class NotificationController {
      */
     @PatchMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
-            @PathVariable("id") UUID id,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestHeader(value = "X-User-Id") UUID userId
     ) {
+        UUID id = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAsRead(id, userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -47,8 +52,9 @@ public class NotificationController {
      */
     @PatchMapping("/read-all")
     public ResponseEntity<ApiResponse<Void>> markAllAsRead(
-            @RequestHeader(value = "X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -59,8 +65,9 @@ public class NotificationController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> markAsDeleted(
             @PathVariable("id") UUID id,
-            @RequestHeader(value = "X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAsDeleted(id, userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -70,8 +77,9 @@ public class NotificationController {
      */
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> markAllAsDeleted(
-            @RequestHeader(value = "X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAllAsDeleted(userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }

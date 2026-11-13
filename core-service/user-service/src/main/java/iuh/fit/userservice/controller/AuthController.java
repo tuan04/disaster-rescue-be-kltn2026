@@ -15,7 +15,8 @@ import iuh.fit.userservice.service.UserService;
 import iuh.fit.userservice.utils.JwtUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +28,16 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final JwtUtils jwtUtils;
     private final UserService userService;
     private final TokenRedisService tokenRedisService;
     private final OtpRedisService otpRedisService;
+
+    @Value("${app.security.cookie-secure:false}")
+    private boolean cookieSecure;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> registerCitizen(@Valid @RequestBody CitizenRegisterRequest request) {
@@ -61,14 +65,15 @@ public class AuthController {
         }
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(7 * 24 * 60 * 60)
-                .sameSite("None")
+                .sameSite(cookieSecure ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         LoginResponse loginResponse = LoginResponse.builder()
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .userInfoResponse(userInfoResponse)
                 .build();
         return ResponseEntity.ok(ApiResponse.success(loginResponse));
@@ -77,44 +82,62 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ResponseEntity<ApiResponse<?>> refreshToken(
             @CookieValue(name = "refreshToken", required = false) String cookieRefreshToken,
-            @RequestHeader(value = "x-refresh-token", required = false) String headerRefreshToken
+            @RequestHeader(value = "x-refresh-token", required = false) String headerRefreshToken,
+            HttpServletResponse response
     ) {
         final String actualRefreshToken = StringUtils.hasText(cookieRefreshToken)
                 ? cookieRefreshToken
                 : headerRefreshToken;
 
         if (actualRefreshToken == null || actualRefreshToken.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Refresh token is missing");
-        }
-        boolean isTokenExpired = jwtUtils.isTokenExpired(actualRefreshToken);
-        UUID userId = jwtUtils.extractId(actualRefreshToken);
-
-        if (userId == null) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Invalid token payload: Missing User ID");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token is missing");
         }
 
-        if (isTokenExpired) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Refresh token is expired");
-        }
+        try {
+            if (jwtUtils.isTokenExpired(actualRefreshToken)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token is expired");
+            }
 
-        if (!userService.checkUserExist(userId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "User not found");
-        }
-        UserInfoResponse userInfoResponse = UserInfoResponse.builder()
-                .id(userId)
-                .teamId(jwtUtils.extractTeamId(actualRefreshToken))
-                .fullName(jwtUtils.extractFullName(actualRefreshToken))
-                .role(jwtUtils.extractRole(actualRefreshToken))
-                .phone(jwtUtils.extractPhone(actualRefreshToken))
-                .build();
-        String accessToken = jwtUtils.generateAccessToken(userInfoResponse);
+            UUID userId = jwtUtils.extractId(actualRefreshToken);
+            if (userId == null) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED, "Invalid token payload: Missing User ID");
+            }
 
-        LoginResponse loginResponse = LoginResponse.builder()
-                .accessToken(accessToken)
-                .userInfoResponse(userInfoResponse)
-                .refreshToken(actualRefreshToken)
-                .build();
-        return ResponseEntity.ok(ApiResponse.success(loginResponse));
+            if (tokenRedisService.isTokenRevoked("refreshToken:" + userId, actualRefreshToken)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token has been revoked");
+            }
+
+            if (!userService.checkUserExist(userId)) {
+                throw new BusinessException(ErrorCode.UNAUTHORIZED, "User not found");
+            }
+
+            UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+                    .id(userId)
+                    .teamId(jwtUtils.extractTeamId(actualRefreshToken))
+                    .fullName(jwtUtils.extractFullName(actualRefreshToken))
+                    .role(jwtUtils.extractRole(actualRefreshToken))
+                    .phone(jwtUtils.extractPhone(actualRefreshToken))
+                    .build();
+            String accessToken = jwtUtils.generateAccessToken(userInfoResponse);
+
+            ResponseCookie cookie = ResponseCookie.from("refreshToken", actualRefreshToken)
+                    .httpOnly(true)
+                    .secure(cookieSecure)
+                    .path("/")
+                    .maxAge(7 * 24 * 60 * 60)
+                    .sameSite(cookieSecure ? "None" : "Lax")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+            LoginResponse loginResponse = LoginResponse.builder()
+                    .accessToken(accessToken)
+                    .userInfoResponse(userInfoResponse)
+                    .refreshToken(actualRefreshToken)
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(loginResponse));
+        } catch (io.jsonwebtoken.JwtException e) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Invalid refresh token: " + e.getMessage());
+        }
     }
 
     @PostMapping("/logout")
@@ -144,10 +167,10 @@ public class AuthController {
 
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .path("/")
                 .maxAge(0)
-                .sameSite("Strict")
+                .sameSite(cookieSecure ? "None" : "Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 

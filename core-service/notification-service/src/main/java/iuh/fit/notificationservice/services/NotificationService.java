@@ -5,7 +5,7 @@ import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.kafka.dto.SOSResponse;
 import iuh.fit.notificationservice.dtos.NotificationResponse;
 import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
-import iuh.fit.notificationservice.dtos.PageResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.notificationservice.entity.Notification;
 import iuh.fit.notificationservice.entity.UserNotification;
 import iuh.fit.notificationservice.redis.LocationTrackingService;

@@ -2,6 +2,7 @@ package iuh.fit.userservice.controller;
 
 import org.springframework.data.domain.Page;
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.userservice.dto.request.UserFilterRequest;
 import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
 import iuh.fit.userservice.dto.response.UserListResponse;
@@ -25,7 +26,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<UserListResponse>>> getAllUsersPage(
+    public ResponseEntity<ApiResponse<PageResponse<UserListResponse>>> getAllUsersPage(
             @ModelAttribute UserFilterRequest request,
             @PageableDefault(page = 0, size = 10) Pageable pageable
     ){

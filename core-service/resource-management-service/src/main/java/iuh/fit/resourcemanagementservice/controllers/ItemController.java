@@ -1,13 +1,15 @@
 package iuh.fit.resourcemanagementservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.resourcemanagementservice.dtos.request.CreateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.ItemResponse;
-import iuh.fit.resourcemanagementservice.enums.ItemUnit;
 import iuh.fit.resourcemanagementservice.services.ItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,16 +25,25 @@ public class ItemController {
     private final ItemService itemService;
 
     /**
+     * API Lấy danh sách vật phẩm (phân trang và tìm kiếm theo tên)
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<ItemResponse>>> getItems(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @PageableDefault(page = 0, size = 20) Pageable pageable
+    ) {
+        PageResponse<ItemResponse> response = itemService.getItems(keyword, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách vật phẩm thành công"));
+    }
+
+    /**
      * API Thêm mới Vật phẩm qua Multipart/Form-Data (hỗ trợ upload ảnh trực tiếp lên S3)
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ItemResponse>> createItemWithImage(
-            @RequestParam("name") String name,
-            @RequestParam("unit") ItemUnit unit,
-            @RequestParam(value = "imageUrl", required = false) String imageUrl,
+            @Valid @ModelAttribute CreateItemRequest request,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
-        CreateItemRequest request = new CreateItemRequest(name, unit, imageUrl);
         ItemResponse response = itemService.createItem(request, image);
         return ResponseEntity.ok(ApiResponse.success(response, "Thêm vật phẩm mới thành công"));
     }
@@ -43,12 +54,9 @@ public class ItemController {
     @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ItemResponse>> updateItemWithImage(
             @PathVariable("id") UUID id,
-            @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "unit", required = false) ItemUnit unit,
-            @RequestParam(value = "imageUrl", required = false) String imageUrl,
+            @Valid @ModelAttribute UpdateItemRequest request,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
-        UpdateItemRequest request = new UpdateItemRequest(name, unit, imageUrl);
         ItemResponse response = itemService.updateItem(id, request, image);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin vật phẩm thành công"));
     }

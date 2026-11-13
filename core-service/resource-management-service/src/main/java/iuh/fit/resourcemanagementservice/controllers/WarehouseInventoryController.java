@@ -7,7 +7,6 @@ import iuh.fit.resourcemanagementservice.dtos.response.CampaignWarehouseInventor
 import iuh.fit.resourcemanagementservice.services.CampaignWarehouseInventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,11 +14,22 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/campaign-warehouse-inventories")
+@RequestMapping("/api/v1/inventories/warehouses")
 @RequiredArgsConstructor
-public class CampaignWarehouseInventoryController {
+public class WarehouseInventoryController {
 
     private final CampaignWarehouseInventoryService inventoryService;
+
+    /**
+     * API Lấy danh sách vật phẩm tồn kho tại một kho cứu trợ
+     */
+    @GetMapping("/{warehouseId}")
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> getInventoriesByWarehouse(
+            @PathVariable("warehouseId") UUID warehouseId
+    ) {
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.getInventoriesByWarehouse(warehouseId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách vật phẩm trong kho thành công"));
+    }
 
     /**
      * API Thêm mới vật phẩm vào kho chiến dịch

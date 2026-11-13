@@ -14,11 +14,22 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/team-mobile-inventories")
+@RequestMapping("/api/v1/inventories/teams")
 @RequiredArgsConstructor
-public class TeamMobileInventoryController {
+public class TeamInventoryController {
 
     private final TeamMobileInventoryService inventoryService;
+
+    /**
+     * API Lấy danh sách toàn bộ vật phẩm trong kho lưu động của một đội cứu hộ
+     */
+    @GetMapping("/{teamId}")
+    public ResponseEntity<ApiResponse<List<TeamMobileInventoryResponse>>> getInventoriesByTeam(
+            @PathVariable("teamId") UUID teamId
+    ) {
+        List<TeamMobileInventoryResponse> response = inventoryService.getInventoriesByTeam(teamId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách vật phẩm của đội cứu hộ thành công"));
+    }
 
     /**
      * API Thêm mới vật phẩm vào kho lưu động của đội cứu hộ

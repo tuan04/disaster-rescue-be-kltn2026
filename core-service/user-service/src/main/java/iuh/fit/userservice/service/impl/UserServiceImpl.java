@@ -3,6 +3,7 @@ package iuh.fit.userservice.service.impl;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.grpc.CCCDImageGrpcResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.userservice.dto.request.AdminUserRequest;
 import iuh.fit.userservice.dto.request.AdminVolunteerProfileRequest;
 import iuh.fit.userservice.dto.request.UserFilterRequest;
@@ -123,10 +124,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserListResponse> getAllUsersPage(UserFilterRequest request, Pageable pageable) {
+    public PageResponse<UserListResponse> getAllUsersPage(UserFilterRequest request, Pageable pageable) {
         Specification<User> spec = UserSpecification.search(request);
-        return userRepository.findAll(spec, pageable)
+        Page<UserListResponse> userPage = userRepository.findAll(spec, pageable)
                 .map(UserListResponse::fromEntity);
+        return PageResponse.from(userPage);
     }
 
 

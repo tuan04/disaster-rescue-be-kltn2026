@@ -10,11 +10,10 @@ import java.util.UUID;
 @Builder
 public record CampaignWarehouseInventoryResponse(
         UUID id,
-        UUID campaignId,
-        String campaignName,
         UUID warehouseId,
         UUID itemId,
         String itemName,
+        String itemImageUrl,
         ItemUnit itemUnit,
         Integer quantity,
         Boolean isDeleted,
@@ -24,11 +23,10 @@ public record CampaignWarehouseInventoryResponse(
     public static CampaignWarehouseInventoryResponse fromEntity(CampaignWarehouseInventory inventory) {
         return CampaignWarehouseInventoryResponse.builder()
                 .id(inventory.getId())
-                .campaignId(inventory.getCampaign() != null ? inventory.getCampaign().getId() : null)
-                .campaignName(inventory.getCampaign() != null ? inventory.getCampaign().getName() : null)
                 .warehouseId(inventory.getWarehouseId())
                 .itemId(inventory.getItem() != null ? inventory.getItem().getId() : null)
                 .itemName(inventory.getItem() != null ? inventory.getItem().getName() : null)
+                .itemImageUrl(inventory.getItem() != null ? inventory.getItem().getImageUrl() : null)
                 .itemUnit(inventory.getItem() != null ? inventory.getItem().getUnit() : null)
                 .quantity(inventory.getQuantity())
                 .isDeleted(inventory.getIsDeleted())

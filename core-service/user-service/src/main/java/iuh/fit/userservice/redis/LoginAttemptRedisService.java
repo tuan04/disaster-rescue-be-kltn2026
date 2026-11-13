@@ -33,7 +33,6 @@ public class LoginAttemptRedisService {
         return "auth:login-fail:" + phone;
     }
 
-
     public void checkAllowed(String phone) {
         String value = redisTemplate.opsForValue().get(key(phone));
 
@@ -57,6 +56,4 @@ public class LoginAttemptRedisService {
     public void reset(String phone) {
         redisTemplate.delete(key(phone));
     }
-
-
 }

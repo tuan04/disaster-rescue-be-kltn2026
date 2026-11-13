@@ -1,8 +1,8 @@
 package iuh.fit.notificationservice.controller;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.notificationservice.dtos.NotificationResponse;
-import iuh.fit.notificationservice.dtos.PageResponse;
 import iuh.fit.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

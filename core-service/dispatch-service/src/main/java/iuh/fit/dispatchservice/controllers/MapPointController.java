@@ -47,26 +47,26 @@ public class MapPointController {
     }
 
     @GetMapping("/strategic-points")
-    public ResponseEntity<ApiResponse<Page<MapPointDetailResponse>>> getStrategicPoints(
+    public ResponseEntity<ApiResponse<PageResponse<MapPointDetailResponse>>> getStrategicPoints(
             @PageableDefault(page = 0, size = 10) Pageable pageable,
             @ModelAttribute StrategicPointsFilter filter
     ) {
-        return ResponseEntity.ok(ApiResponse.success(mapPointService.findStrategicPoints(filter, pageable)));
+        Page<MapPointDetailResponse> page = mapPointService.findStrategicPoints(filter, pageable);
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(page)));
     }
 
     @GetMapping("/rescue-requests-pending")
-    public ResponseEntity<ApiResponse<Page<MapPointDetailResponse>>> getPendingRescueRequests(
+    public ResponseEntity<ApiResponse<PageResponse<MapPointDetailResponse>>> getPendingRescueRequests(
             @RequestParam(required = false) EmergencyLevel emergencyLevel,
             @RequestParam(required = false) RequestSource source,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
+        Page<MapPointDetailResponse> page = mapPointService.getPendingRescueRequests(emergencyLevel, source, pageable);
         return ResponseEntity.ok(ApiResponse.success(
-                mapPointService.getPendingRescueRequests(emergencyLevel, source, pageable),
+                PageResponse.from(page),
                 "Lấy danh sách yêu cầu cứu hộ chờ xử lý thành công"
         ));
     }
-
-
 
     @PostMapping("/warehouses")
     public ResponseEntity<ApiResponse<MapPointDetailResponse>> createWarehouseMapPoint(
@@ -149,8 +149,6 @@ public class MapPointController {
                 "Cập nhật báo cáo hiểm họa thành công"
         ));
     }
-
-
 
     @GetMapping("sos-requests")
     public ResponseEntity<ApiResponse<PageResponse<RescueRequestListResponse>>> getRequests(

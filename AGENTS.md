@@ -132,7 +132,7 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 
 ---
 
-### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`, `/api/v1/campaign-warehouse-inventories`, `/api/v1/items`, `/api/v1/team-mobile-inventories`)
+### C. Resource Management Service (`/api/v1/campaigns`, `/api/v1/campaign-teams`, `/api/v1/teams`, `/api/v1/items`, `/api/v1/inventories`)
 
 | Phương thức | Endpoint | Header / Auth | Mô tả chức năng | Request Body / Params |
 |:---|:---|:---|:---|:---|
@@ -142,20 +142,20 @@ Tất cả API công khai bên ngoài đều được gọi qua **API Gateway (`
 | `PATCH` | `/api/v1/campaign-teams/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin đội cứu hộ (phương tiện, trạng thái, sđt) | Path: `id`<br>`UpdateTeamRequest` (totalParticipants, status, vehicles, teamName, leaderId, leaderPhone) |
 | `POST` | `/api/v1/teams/{teamId}/members` | `Authorization` (Manager/Leader) | Thêm thành viên vào đội cứu hộ theo vai trò | Path: `teamId`<br>`AddMemberRequest` (memberId, roleInTeam) |
 | `DELETE` | `/api/v1/teams/{teamId}/members/{memberId}` | `Authorization` (Manager/Leader) | Xóa thành viên khỏi đội cứu hộ | Path: `teamId`, `memberId` |
-| `POST` | `/api/v1/campaign-warehouse-inventories` | `Authorization` (Manager/Admin) | Thêm vật phẩm vào kho của chiến dịch | `CreateCampaignWarehouseInventoryRequest` (campaignId, warehouseId, itemId, quantity) |
-| `PATCH` | `/api/v1/campaign-warehouse-inventories/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin tồn kho (số lượng, kho) | Path: `id`<br>`UpdateCampaignWarehouseInventoryRequest` (quantity, warehouseId) |
-| `DELETE` | `/api/v1/campaign-warehouse-inventories/{id}` | `Authorization` (Manager/Admin) | Xóa mềm tồn kho chiến dịch (đặt `isDeleted = true`) | Path: `id` |
-| `GET` | `/api/v1/campaign-warehouse-inventories/{id}` | Public / Authenticated | Xem chi tiết tồn kho theo ID | Path: `id` |
-| `GET` | `/api/v1/campaign-warehouse-inventories` | Public / Authenticated | Lấy danh sách tồn kho (lọc theo campaignId, warehouseId) | Query Params: `campaignId`, `warehouseId` |
-| `POST` | `/api/v1/items` | `Authorization` (Manager/Admin) | Thêm mới vật phẩm (hỗ trợ JSON hoặc multipart/form-data upload ảnh lên S3) | JSON: `CreateItemRequest`<br>hoặc FormData: `name`, `unit`, `imageUrl`, `image` |
-| `PATCH` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin vật phẩm (hỗ trợ JSON hoặc multipart) | Path: `id`<br>JSON: `UpdateItemRequest`<br>hoặc FormData: `name`, `unit`, `imageUrl`, `image` |
+| `POST` | `/api/v1/inventories/warehouses` | `Authorization` (Manager/Admin) | Thêm vật phẩm vào kho của chiến dịch | `CreateCampaignWarehouseInventoryRequest` (campaignId, warehouseId, itemId, quantity) |
+| `PATCH` | `/api/v1/inventories/warehouses/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin tồn kho (số lượng, kho) | Path: `id`<br>`UpdateCampaignWarehouseInventoryRequest` (quantity, warehouseId) |
+| `DELETE` | `/api/v1/inventories/warehouses/{id}` | `Authorization` (Manager/Admin) | Xóa mềm tồn kho chiến dịch (đặt `isDeleted = true`) | Path: `id` |
+| `GET` | `/api/v1/inventories/warehouses/{warehouseId}` | Public / Authenticated | Lấy danh sách tồn kho tại kho cứu trợ | Path: `warehouseId`, Query: `campaignId` |
+| `POST` | `/api/v1/inventories/allocate` | `Authorization` (Manager/Admin) | Cấp phát vật tư từ kho chiến dịch sang đội cứu hộ (tự động trừ kho, cộng đội) | `AllocateInventoryRequest` (warehouseInventoryId, campaignTeamId, quantity) |
+| `GET` | `/api/v1/items` | Public / Authenticated | Lấy danh mục vật phẩm toàn hệ thống (phân trang PageResponse) | Query: `keyword`, `page`, `size` |
+| `POST` | `/api/v1/items` | `Authorization` (Manager/Admin) | Thêm mới vật phẩm (hỗ trợ multipart/form-data upload ảnh lên S3) | FormData: `name`, `unit`, `imageUrl`, `image` |
+| `PATCH` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Cập nhật thông tin vật phẩm (hỗ trợ multipart) | Path: `id`<br>FormData: `name`, `unit`, `imageUrl`, `image` |
 | `DELETE` | `/api/v1/items/{id}` | `Authorization` (Manager/Admin) | Xóa mềm vật phẩm (đặt `isDeleted = true`) | Path: `id` |
 | `GET` | `/api/v1/items/{id}` | Public / Authenticated | Xem chi tiết một vật phẩm theo ID | Path: `id` |
-| `POST` | `/api/v1/team-mobile-inventories` | `Authorization` (Leader/Manager/Admin) | Thêm vật phẩm vào kho lưu động của đội | `CreateTeamMobileInventoryRequest` (campaignTeamId, itemId, currentQuantity) |
-| `PATCH` | `/api/v1/team-mobile-inventories/{id}` | `Authorization` (Leader/Manager/Admin) | Cập nhật số lượng / trạng thái tồn kho lưu động | Path: `id`<br>`UpdateTeamMobileInventoryRequest` (currentQuantity, isDeleted) |
-| `DELETE` | `/api/v1/team-mobile-inventories/{id}` | `Authorization` (Leader/Manager/Admin) | Xóa mềm vật phẩm khỏi kho lưu động (đặt `isDeleted = true`) | Path: `id` |
-| `GET` | `/api/v1/team-mobile-inventories/{id}` | Public / Authenticated | Xem chi tiết tồn kho lưu động theo ID | Path: `id` |
-| `GET` | `/api/v1/team-mobile-inventories/team/{teamId}` | Public / Authenticated | Lấy danh sách tồn kho lưu động của đội theo teamId | Path: `teamId` |
+| `GET` | `/api/v1/inventories/teams/{teamId}` | Public / Authenticated | Lấy danh sách toàn bộ vật tư của đội cứu hộ | Path: `teamId` |
+| `POST` | `/api/v1/inventories/teams` | `Authorization` (Leader) | Đội tự chuẩn bị: Thêm vật tư tự túc vào đội (không ràng buộc) | `CreateTeamMobileInventoryRequest` (campaignTeamId, itemId, currentQuantity) |
+| `PATCH` | `/api/v1/inventories/teams/{id}` | `Authorization` (Leader) | Cập nhật số lượng vật tư đội đang có | Path: `id`<br>`UpdateTeamMobileInventoryRequest` (currentQuantity, isDeleted) |
+| `DELETE` | `/api/v1/inventories/teams/{id}` | `Authorization` (Leader) | Xóa vật phẩm khỏi kho lưu động của đội | Path: `id` |
 
 ---
 

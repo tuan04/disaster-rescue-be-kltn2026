@@ -1,10 +1,12 @@
 package iuh.fit.dispatchservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.dtos.request.CancelAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
 import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
+import iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.services.AssignmentService;
 import jakarta.validation.Valid;
@@ -117,5 +119,23 @@ public class AssignmentController {
             @Valid @RequestBody CancelAssignmentRequest request) {
         assignmentService.cancel(assignmentId, leaderId, request.reason());
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/ongoing")
+    public ResponseEntity<ApiResponse<PageResponse<OngoingAssignmentResponse>>>
+    getOngoingAssignments(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
+    ) {
+        PageResponse<OngoingAssignmentResponse> response =
+                assignmentService.getOngoingAssignments(page, size);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response,
+                        "Lấy danh sách nhiệm vụ đang thực hiện thành công"
+                )
+        );
     }
 }

@@ -1,8 +1,11 @@
 package iuh.fit.dispatchservice.repositories;
 
+import iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
 import iuh.fit.dispatchservice.enums.RequestStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -45,4 +48,53 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
             @Param("teamId") UUID teamId,
             @Param("assignmentStatus") AssignmentStatus assignmentStatus,
             @Param("requestStatus") RequestStatus requestStatus);
+
+
+
+
+    @Query(
+            value = """
+                select new iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse(
+                    a.id,
+                    r.id,
+                    a.campaignTeamId,
+                    a.assignedTeamName,
+                    a.status,
+                    coalesce(
+                        a.modifiedAt,
+                        a.respondedAt,
+                        a.assignedAt,
+                        a.createdAt
+                    )
+                )
+                from Assignment a
+                join a.rescueRequest r
+                where a.status in :assignmentStatuses
+                  and r.status in :requestStatuses
+                order by
+                    coalesce(
+                        a.modifiedAt,
+                        a.respondedAt,
+                        a.assignedAt,
+                        a.createdAt
+                    ) desc,
+                    a.id desc
+                """,
+            countQuery = """
+                select count(a)
+                from Assignment a
+                join a.rescueRequest r
+                where a.status in :assignmentStatuses
+                  and r.status in :requestStatuses
+                """
+    )
+    Page<OngoingAssignmentResponse> findOngoingAssignments(
+            @Param("assignmentStatuses")
+            List<AssignmentStatus> assignmentStatuses,
+
+            @Param("requestStatuses")
+            List<RequestStatus> requestStatuses,
+
+            Pageable pageable
+    );
 }

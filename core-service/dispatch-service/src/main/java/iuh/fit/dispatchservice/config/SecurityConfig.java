@@ -118,6 +118,8 @@ public class SecurityConfig {
                                 "/api/v1/locations/{id}"
                         ).hasAnyRole("ADMIN", "COORDINATOR")
 
+
+
                         // Mọi tài khoản hợp lệ được gửi báo cáo hiểm họa.
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -140,6 +142,18 @@ public class SecurityConfig {
                                 "RESCUER"
                         )
 
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/map-points"
+                        ).permitAll()
+
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/assignments/ongoing"
+                        ).hasAnyRole("ADMIN", "COORDINATOR")
+
                         // Quản trị hoặc điều phối phân công đội cứu hộ.
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -159,6 +173,16 @@ public class SecurityConfig {
                                 "/api/v1/assignments/{assignmentId}/complete",
                                 "/api/v1/assignments/{assignmentId}/cancel"
                         ).hasRole("LEADER")
+
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/sos-requests/statistics/waiting",
+                                "/api/v1/sos-requests/statistics/processing",
+                                "/api/v1/sos-requests/statistics/completed",
+                                "/api/v1/sos-requests/statistics/chart"
+
+                        ).hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Đọc thông tin phân công.
                         //
@@ -180,6 +204,10 @@ public class SecurityConfig {
                         // Không tự động mở các endpoint được thêm về sau.
                         .anyRequest().denyAll()
                 )
+
+
+
+
 
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt

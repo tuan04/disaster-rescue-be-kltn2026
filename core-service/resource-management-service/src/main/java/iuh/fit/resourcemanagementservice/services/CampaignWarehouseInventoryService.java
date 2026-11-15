@@ -25,62 +25,76 @@ public class CampaignWarehouseInventoryService {
     private final ItemService itemService;
 
     /**
-     * Thêm mới vật phẩm vào kho cứu trợ
+     * Nhập danh sách vật phẩm vào kho cứu trợ (tự động cộng dồn nếu đã có)
      */
     @Transactional
-    public CampaignWarehouseInventoryResponse createInventory(CreateCampaignWarehouseInventoryRequest request) {
-        Optional<CampaignWarehouseInventory> existingOpt = inventoryRepository.findByWarehouseIdAndItem_Id(
-                request.warehouseId(),
-                request.itemId()
-        );
+    public List<CampaignWarehouseInventoryResponse> createInventories(CreateCampaignWarehouseInventoryRequest request) {
+        List<CampaignWarehouseInventory> savedList = new java.util.ArrayList<>();
 
-        CampaignWarehouseInventory inventoryToSave;
+        for (CreateCampaignWarehouseInventoryRequest.WarehouseItemImport itemReq : request.items()) {
+            Optional<CampaignWarehouseInventory> existingOpt = inventoryRepository.findByWarehouseIdAndItem_Id(
+                    request.warehouseId(),
+                    itemReq.itemId()
+            );
 
-        if (existingOpt.isPresent()) {
-            CampaignWarehouseInventory existing = existingOpt.get();
-            if (Boolean.TRUE.equals(existing.getIsDeleted())) {
-                // Nếu đã từng bị xóa mềm (isDeleted = true), tái kích hoạt lại bản ghi với số lượng mới
-                existing.setQuantity(request.quantity());
-                existing.setIsDeleted(false);
+            CampaignWarehouseInventory inventoryToSave;
+
+            if (existingOpt.isPresent()) {
+                CampaignWarehouseInventory existing = existingOpt.get();
+                if (Boolean.TRUE.equals(existing.getIsDeleted())) {
+                    // Nếu đã từng bị xóa mềm (isDeleted = true), tái kích hoạt lại bản ghi với số lượng mới
+                    existing.setQuantity(itemReq.quantity());
+                    existing.setIsDeleted(false);
+                } else {
+                    // Nếu đã có trong kho -> Tự động CỘNG DỒN số lượng nhập thêm
+                    int currentQty = existing.getQuantity() != null ? existing.getQuantity() : 0;
+                    existing.setQuantity(currentQty + itemReq.quantity());
+                }
+                inventoryToSave = existing;
             } else {
-                // Nếu đã có trong kho -> Tự động CỘNG DỒN số lượng nhập thêm
-                int currentQty = existing.getQuantity() != null ? existing.getQuantity() : 0;
-                existing.setQuantity(currentQty + request.quantity());
+                Item item = itemService.findById(itemReq.itemId());
+                inventoryToSave = CampaignWarehouseInventory.builder()
+                        .warehouseId(request.warehouseId())
+                        .item(item)
+                        .quantity(itemReq.quantity())
+                        .isDeleted(false)
+                        .build();
             }
-            inventoryToSave = existing;
-        } else {
-            Item item = itemService.findById(request.itemId());
-            inventoryToSave = CampaignWarehouseInventory.builder()
-                    .warehouseId(request.warehouseId())
-                    .item(item)
-                    .quantity(request.quantity())
-                    .isDeleted(false)
-                    .build();
+
+            savedList.add(inventoryRepository.save(inventoryToSave));
         }
 
-        CampaignWarehouseInventory saved = inventoryRepository.save(inventoryToSave);
-        return CampaignWarehouseInventoryResponse.fromEntity(saved);
+        return savedList.stream()
+                .map(CampaignWarehouseInventoryResponse::fromEntity)
+                .toList();
     }
 
     /**
-     * Cập nhật thông tin tồn kho (số lượng, kho)
+     * Cập nhật thông tin tồn kho hàng loạt
      */
     @Transactional
-    public CampaignWarehouseInventoryResponse updateInventory(UUID id, UpdateCampaignWarehouseInventoryRequest request) {
-        CampaignWarehouseInventory existing = inventoryRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        "Không tìm thấy thông tin tồn kho với ID: " + id
-                ));
+    public List<CampaignWarehouseInventoryResponse> updateInventories(List<UpdateCampaignWarehouseInventoryRequest> requests) {
+        List<CampaignWarehouseInventory> updatedList = new java.util.ArrayList<>();
 
-        existing.setQuantity(request.quantity());
+        for (UpdateCampaignWarehouseInventoryRequest req : requests) {
+            CampaignWarehouseInventory existing = inventoryRepository.findByIdAndIsDeletedFalse(req.id())
+                    .orElseThrow(() -> new BusinessException(
+                            ErrorCode.RESOURCE_NOT_FOUND,
+                            "Không tìm thấy thông tin tồn kho với ID: " + req.id()
+                    ));
 
-        if (request.isDeleted() != null) {
-            existing.setIsDeleted(request.isDeleted());
+            existing.setQuantity(req.quantity());
+
+            if (req.isDeleted() != null) {
+                existing.setIsDeleted(req.isDeleted());
+            }
+
+            updatedList.add(inventoryRepository.save(existing));
         }
 
-        CampaignWarehouseInventory updated = inventoryRepository.save(existing);
-        return CampaignWarehouseInventoryResponse.fromEntity(updated);
+        return updatedList.stream()
+                .map(CampaignWarehouseInventoryResponse::fromEntity)
+                .toList();
     }
 
     /**

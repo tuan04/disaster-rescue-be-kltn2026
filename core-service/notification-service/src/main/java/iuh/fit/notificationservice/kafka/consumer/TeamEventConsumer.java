@@ -43,6 +43,7 @@ public class TeamEventConsumer {
             case MEMBER_REMOVED -> "Thông báo rời đội cứu hộ";
             case LEADER_TRANSFERRED -> "Bổ nhiệm Đội trưởng mới";
             case DISBANDED -> "Đội cứu hộ đã giải tán";
+            case INVENTORY_ALLOCATED -> "Vật tư mới đã được cấp phát cho đội";
             default -> "Thông báo đội cứu hộ";
         };
 

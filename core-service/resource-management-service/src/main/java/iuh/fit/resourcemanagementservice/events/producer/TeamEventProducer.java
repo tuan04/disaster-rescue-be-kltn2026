@@ -45,7 +45,6 @@ public class TeamEventProducer {
                 eventType,
                 team.getId(),
                 team.getTeamName(),
-                team.getCampaign().getId(),
                 targetUserId,
                 actorId,
                 actorName,

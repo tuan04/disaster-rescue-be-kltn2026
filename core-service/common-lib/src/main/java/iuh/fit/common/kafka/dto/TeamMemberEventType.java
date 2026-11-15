@@ -11,5 +11,6 @@ public enum TeamMemberEventType {
     JOIN_REJECTED,
     MEMBER_REMOVED,
     LEADER_TRANSFERRED,
-    DISBANDED
+    DISBANDED,
+    INVENTORY_ALLOCATED
 }

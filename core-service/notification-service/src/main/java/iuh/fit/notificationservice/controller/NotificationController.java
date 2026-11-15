@@ -39,10 +39,10 @@ public class NotificationController {
      */
     @PatchMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "X-User-Id") UUID userId
+            @PathVariable("id") UUID id,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID id = UUID.fromString(jwt.getClaimAsString("id"));
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAsRead(id, userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }

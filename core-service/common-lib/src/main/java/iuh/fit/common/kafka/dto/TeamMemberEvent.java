@@ -7,7 +7,6 @@ public record TeamMemberEvent(
         TeamMemberEventType eventType,
         UUID teamId,
         String teamName,
-        UUID campaignId,
         UUID targetUserId,
         UUID actorId,
         String actorName,

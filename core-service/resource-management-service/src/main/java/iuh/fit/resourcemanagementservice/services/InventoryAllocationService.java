@@ -2,6 +2,7 @@ package iuh.fit.resourcemanagementservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.kafka.dto.TeamMemberEventType;
 import iuh.fit.resourcemanagementservice.dtos.request.AllocateInventoryRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.TeamMobileInventoryResponse;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
@@ -9,7 +10,9 @@ import iuh.fit.resourcemanagementservice.entity.CampaignWarehouseInventory;
 import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamApprovalStatus;
 import iuh.fit.resourcemanagementservice.enums.TeamStatus;
+import iuh.fit.resourcemanagementservice.events.producer.TeamEventProducer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InventoryAllocationService {
@@ -26,6 +30,7 @@ public class InventoryAllocationService {
     private final CampaignWarehouseInventoryService warehouseInventoryService;
     private final TeamMobileInventoryService teamMobileInventoryService;
     private final CampaignTeamService campaignTeamService;
+    private final TeamEventProducer teamEventProducer;
 
     /**
      * Điều phối cấp phát vật tư từ Kho cứu trợ dã chiến sang Đội cứu hộ
@@ -71,6 +76,8 @@ public class InventoryAllocationService {
 
         // 4. Trừ tồn kho tại kho cứu trợ và cộng dồn vào kho lưu động của đội cứu hộ cho từng mặt hàng
         List<TeamMobileInventoryResponse> results = new ArrayList<>();
+        List<String> allocatedSummaryList = new ArrayList<>();
+
         for (AllocateInventoryRequest.ItemAllocation itemReq : request.items()) {
             // Trừ số lượng tồn kho (sử dụng Pessimistic Lock và validate từng món)
             CampaignWarehouseInventory warehouseInv = warehouseInventoryService.deductInventoryQuantity(request.warehouseId(), itemReq);
@@ -82,6 +89,30 @@ public class InventoryAllocationService {
                     itemReq.quantity()
             );
             results.add(teamInv);
+
+            String unitName = teamInv.itemUnit() != null ? teamInv.itemUnit().name() : "";
+            allocatedSummaryList.add(String.format("%s (x%d %s)", teamInv.itemName(), itemReq.quantity(), unitName).trim());
+        }
+
+        // 5. Gửi thông báo realtime đến Đội trưởng về việc cấp phát vật tư
+        if (team.getLeaderId() != null && !results.isEmpty()) {
+            try {
+                String itemsDetail = String.join(", ", allocatedSummaryList);
+                String message = String.format("Ban chỉ huy đã cấp phát %d mặt hàng vào xe của đội: %s",
+                        results.size(), itemsDetail);
+
+                teamEventProducer.sendTeamEvent(
+                        team,
+                        TeamMemberEventType.INVENTORY_ALLOCATED,
+                        team.getLeaderId(),
+                        null,
+                        "Ban chỉ huy",
+                        message
+                );
+                log.info("Sent INVENTORY_ALLOCATED event to leader {} of team {}", team.getLeaderId(), team.getId());
+            } catch (Exception ex) {
+                log.error("Failed to publish INVENTORY_ALLOCATED event for team {}: {}", team.getId(), ex.getMessage(), ex);
+            }
         }
 
         return results;

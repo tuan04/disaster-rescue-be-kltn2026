@@ -1,8 +1,8 @@
 package iuh.fit.notificationservice.controller;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.notificationservice.dtos.NotificationResponse;
-import iuh.fit.notificationservice.dtos.PageResponse;
 import iuh.fit.notificationservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,10 +39,10 @@ public class NotificationController {
      */
     @PatchMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader(value = "X-User-Id") UUID userId
+            @PathVariable("id") UUID id,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID id = UUID.fromString(jwt.getClaimAsString("id"));
+        UUID userId = UUID.fromString(jwt.getClaimAsString("id"));
         notificationService.markAsRead(id, userId);
         return ResponseEntity.ok(ApiResponse.success(null));
     }

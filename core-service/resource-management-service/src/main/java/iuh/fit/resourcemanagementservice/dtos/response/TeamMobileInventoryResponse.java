@@ -14,6 +14,7 @@ public record TeamMobileInventoryResponse(
         String teamName,
         UUID itemId,
         String itemName,
+        String itemImageUrl,
         ItemUnit itemUnit,
         Integer currentQuantity,
         Boolean isDeleted,
@@ -27,6 +28,7 @@ public record TeamMobileInventoryResponse(
                 .teamName(inventory.getCampaignTeam() != null ? inventory.getCampaignTeam().getTeamName() : null)
                 .itemId(inventory.getItem() != null ? inventory.getItem().getId() : null)
                 .itemName(inventory.getItem() != null ? inventory.getItem().getName() : null)
+                .itemImageUrl(inventory.getItem() != null ? inventory.getItem().getImageUrl() : null)
                 .itemUnit(inventory.getItem() != null ? inventory.getItem().getUnit() : null)
                 .currentQuantity(inventory.getCurrentQuantity())
                 .isDeleted(inventory.getIsDeleted())

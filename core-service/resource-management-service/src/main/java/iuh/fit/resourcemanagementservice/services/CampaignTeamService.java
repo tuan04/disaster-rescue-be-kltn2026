@@ -238,7 +238,7 @@ public class CampaignTeamService {
         Specification<CampaignTeam> spec = Specification
                 .where(CampaignTeamSpecification.hasCampaignId(campaignId))
                 .and(CampaignTeamSpecification.hasApprovalStatus(approvalStatus))
-                .and(CampaignTeamSpecification.hasStatus(status))
+                .and(status != null ? CampaignTeamSpecification.hasStatus(status) : CampaignTeamSpecification.notDisbanded())
                 .and(CampaignTeamSpecification.hasKeyword(keyword));
 
         Page<CampaignTeam> teamPage = campaignTeamRepository.findAll(spec, pageable);

@@ -1,6 +1,7 @@
 package iuh.fit.dispatchservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.dtos.response.LocationPageResponse;
 import iuh.fit.dispatchservice.dtos.response.LocationResponse;
 import iuh.fit.dispatchservice.enums.LocationStatus;
@@ -31,7 +32,7 @@ public class LocationController {
     }
 
     @GetMapping("/pages")
-    public ResponseEntity<ApiResponse<Page<LocationPageResponse>>> getAllLocationsWithPagination(
+    public ResponseEntity<ApiResponse<PageResponse<LocationPageResponse>>> getAllLocationsWithPagination(
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(required = false) UUID userId,
             @RequestParam(required = false) LocationStatus status,
@@ -43,7 +44,7 @@ public class LocationController {
                 status,
                 pageable
         );
-        return ResponseEntity.ok(ApiResponse.success(pageResult, "Lấy danh sách địa điểm thành công"));
+        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(pageResult), "Lấy danh sách địa điểm thành công"));
     }
 
     @PostMapping

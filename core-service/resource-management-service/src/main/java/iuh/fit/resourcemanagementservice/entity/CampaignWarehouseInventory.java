@@ -1,6 +1,5 @@
 package iuh.fit.resourcemanagementservice.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -18,29 +17,19 @@ public class CampaignWarehouseInventory {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campaign_id")
-    private Campaign campaign;
-
     // Cắt Ref sang Warehouse Service (nếu có)
-    @Column(name = "warehouse_id")
+    @Column(name = "warehouse_id", nullable = false)
     private UUID warehouseId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id")
+    @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
     private Integer quantity;
 
-    @Column(name = "manager_name")
-    private String managerPhone;
-
     @Builder.Default
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
-
-
-
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

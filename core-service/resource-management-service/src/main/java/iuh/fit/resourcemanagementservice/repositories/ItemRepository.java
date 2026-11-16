@@ -1,6 +1,8 @@
 package iuh.fit.resourcemanagementservice.repositories;
 
 import iuh.fit.resourcemanagementservice.entity.Item;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,5 +18,7 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     Optional<Item> findByNameIgnoreCase(String name);
 
-    boolean existsByNameIgnoreCaseAndIsDeletedFalse(String name);
+    Page<Item> findByIsDeletedFalse(Pageable pageable);
+
+    Page<Item> findByNameContainingIgnoreCaseAndIsDeletedFalse(String keyword, Pageable pageable);
 }

@@ -2,12 +2,15 @@ package iuh.fit.resourcemanagementservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.resourcemanagementservice.dtos.request.CreateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.ItemResponse;
 import iuh.fit.resourcemanagementservice.entity.Item;
 import iuh.fit.resourcemanagementservice.repositories.ItemRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,8 +34,6 @@ public class ItemService {
     public ItemResponse createItem(CreateItemRequest request, MultipartFile image) {
         String imageUrl = request.imageUrl();
 
-        System.out.println("Received imageUrl: " + image);
-
         if (image != null && !image.isEmpty()) {
             try {
                 imageUrl = s3Service.uploadFile(image);
@@ -44,8 +45,6 @@ public class ItemService {
                 );
             }
         }
-
-        System.out.println("Received imageUrl: " + imageUrl);
 
         String itemName = request.name().trim();
         Optional<Item> existingOpt = itemRepository.findByNameIgnoreCase(itemName);
@@ -140,17 +139,32 @@ public class ItemService {
         itemRepository.save(existing);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ItemResponse> getItems(String keyword, Pageable pageable) {
+        Page<Item> page = (keyword != null && !keyword.isBlank())
+                ? itemRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword.trim(), pageable)
+                : itemRepository.findByIsDeletedFalse(pageable);
+        return PageResponse.from(page.map(ItemResponse::fromEntity));
+    }
+
     /**
      * Lấy chi tiết thông tin một vật phẩm theo ID
      */
     @Transactional(readOnly = true)
     public ItemResponse getItemById(UUID id) {
-        Item existing = itemRepository.findByIdAndIsDeletedFalse(id)
+        Item existing = findById(id);
+        return ItemResponse.fromEntity(existing);
+    }
+
+    /**
+     * Tìm entity vật phẩm còn hoạt động theo ID (dành cho các service nội bộ)
+     */
+    @Transactional(readOnly = true)
+    public Item findById(UUID id) {
+        return itemRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.RESOURCE_NOT_FOUND,
-                        "Không tìm thấy vật phẩm với ID: " + id
+                        "Không tìm thấy vật phẩm hoặc vật phẩm đã bị xóa với ID: " + id
                 ));
-
-        return ItemResponse.fromEntity(existing);
     }
 }

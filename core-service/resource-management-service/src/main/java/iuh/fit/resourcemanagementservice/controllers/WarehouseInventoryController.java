@@ -7,7 +7,6 @@ import iuh.fit.resourcemanagementservice.dtos.response.CampaignWarehouseInventor
 import iuh.fit.resourcemanagementservice.services.CampaignWarehouseInventoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,32 +14,42 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/campaign-warehouse-inventories")
+@RequestMapping("/api/v1/inventories/warehouses")
 @RequiredArgsConstructor
-public class CampaignWarehouseInventoryController {
+public class WarehouseInventoryController {
 
     private final CampaignWarehouseInventoryService inventoryService;
 
     /**
-     * API Thêm mới vật phẩm vào kho chiến dịch
+     * API Lấy danh sách vật phẩm tồn kho tại một kho cứu trợ
      */
-    @PostMapping
-    public ResponseEntity<ApiResponse<CampaignWarehouseInventoryResponse>> createInventory(
-            @Valid @RequestBody CreateCampaignWarehouseInventoryRequest request
+    @GetMapping("/{warehouseId}")
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> getInventoriesByWarehouse(
+            @PathVariable("warehouseId") UUID warehouseId
     ) {
-        CampaignWarehouseInventoryResponse response = inventoryService.createInventory(request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thêm vật phẩm vào kho chiến dịch thành công"));
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.getInventoriesByWarehouse(warehouseId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách vật phẩm trong kho thành công"));
     }
 
     /**
-     * API Cập nhật thông tin tồn kho
+     * API Nhập danh sách vật phẩm vào kho chiến dịch (hỗ trợ cộng dồn tự động)
      */
-    @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<CampaignWarehouseInventoryResponse>> updateInventory(
-            @PathVariable("id") UUID id,
-            @Valid @RequestBody UpdateCampaignWarehouseInventoryRequest request
+    @PostMapping
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> createInventories(
+            @Valid @RequestBody CreateCampaignWarehouseInventoryRequest request
     ) {
-        CampaignWarehouseInventoryResponse response = inventoryService.updateInventory(id, request);
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.createInventories(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Nhập vật phẩm vào kho thành công"));
+    }
+
+    /**
+     * API Cập nhật thông tin tồn kho hàng loạt
+     */
+    @PatchMapping
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> updateInventories(
+            @Valid @RequestBody List<UpdateCampaignWarehouseInventoryRequest> requests
+    ) {
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.updateInventories(requests);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin tồn kho thành công"));
     }
 
@@ -54,6 +63,4 @@ public class CampaignWarehouseInventoryController {
         inventoryService.deleteInventory(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa vật phẩm khỏi kho chiến dịch thành công"));
     }
-
-
 }

@@ -1,6 +1,8 @@
 package iuh.fit.userservice.controller;
 
 import iuh.fit.userservice.dto.request.AdminUserRequest;
+import iuh.fit.userservice.dto.request.ChangePasswordRequest;
+import iuh.fit.userservice.dto.request.UpdateMyProfileRequest;
 import iuh.fit.userservice.dto.response.AdminUserResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
@@ -41,9 +44,9 @@ public class UserController {
 
     @GetMapping({ "/me", "/profile" })
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
-            @AuthenticationPrincipal Jwt jwt
+            Authentication authentication
     ) {
-        UUID userId = UUID.fromString(jwt.getClaimAsString("user_id"));
+        UUID userId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(userService.getUserProfile(userId)));
     }
 
@@ -86,6 +89,38 @@ public class UserController {
                 ApiResponse.success(
                         userService.updateUser(userId, request)
                 )
+        );
+    }
+
+
+    @PatchMapping(
+            value = "/me",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateMyProfile(
+            Authentication authentication,
+            @Valid @ModelAttribute UpdateMyProfileRequest request
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        userService.updateMyProfile(userId, request)
+                )
+        );
+    }
+
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+
+        userService.changePassword(userId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Đổi mật khẩu thành công")
         );
     }
 

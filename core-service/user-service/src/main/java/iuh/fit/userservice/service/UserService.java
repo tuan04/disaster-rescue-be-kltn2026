@@ -1,6 +1,8 @@
 package iuh.fit.userservice.service;
 
 import iuh.fit.userservice.dto.request.AdminUserRequest;
+import iuh.fit.userservice.dto.request.ChangePasswordRequest;
+import iuh.fit.userservice.dto.request.UpdateMyProfileRequest;
 import iuh.fit.userservice.dto.request.UserFilterRequest;
 import iuh.fit.userservice.dto.response.AdminUserResponse;
 import iuh.fit.userservice.dto.response.UserIDAndNameResponse;
@@ -33,4 +35,14 @@ public interface UserService {
             UUID userId,
             AdminUserRequest request
     );
+
+
+    UserProfileResponse updateMyProfile(
+            UUID userId,
+            UpdateMyProfileRequest request
+    );
+
+
+
+    void changePassword(UUID userId, ChangePasswordRequest request);
 }

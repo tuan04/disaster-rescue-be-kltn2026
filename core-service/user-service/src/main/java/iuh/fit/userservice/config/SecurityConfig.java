@@ -99,6 +99,12 @@ public class SecurityConfig {
                                 "/api/v1/users"
                         ).hasRole("ADMIN")
 
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/v1/users/me",
+                                "/api/v1/users/me/password"
+                        ).authenticated()
+
 
                         .requestMatchers(
                                 HttpMethod.PATCH,

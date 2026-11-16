@@ -3,6 +3,7 @@ package iuh.fit.userservice.service.impl;
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.grpc.CCCDImageGrpcResponse;
+import iuh.fit.userservice.dto.request.*;
 import iuh.fit.common.response.PageResponse;
 import iuh.fit.userservice.dto.request.AdminUserRequest;
 import iuh.fit.userservice.dto.request.AdminVolunteerProfileRequest;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final IntegrationGrpcClient integrationGrpcClient;
 
     private final PasswordEncoder passwordEncoder;
+    private final S3Service s3Service;
 
     @Override
     public boolean checkUserExist(UUID userId) {
@@ -189,6 +192,7 @@ public class UserServiceImpl implements UserService {
         return saveAdminUser(user);
     }
 
+
     private void validateAdminRequest(AdminUserRequest request) {
         boolean employee = request.role() != AccountRole.CITIZEN;
 
@@ -258,4 +262,110 @@ public class UserServiceImpl implements UserService {
             );
         }
     }
+
+
+
+    @Override
+    public UserProfileResponse updateMyProfile(
+            UUID userId,
+            UpdateMyProfileRequest request
+    ) {
+        User user = findUserById(userId);
+
+        if (user.isDeleted()) {
+            throw new BusinessException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Không tìm thấy người dùng"
+            );
+        }
+
+        if (request.getFullName() != null) {
+            String fullName = request.getFullName().strip();
+
+            if (fullName.isBlank()) {
+                throw new BusinessException(
+                        ErrorCode.INVALID_INPUT,
+                        "Họ tên không được để trống"
+                );
+            }
+
+            user.setFullName(fullName);
+        }
+
+        if (request.getSex() != null) {
+            user.setSex(request.getSex());
+        }
+
+        if (request.getBirthDate() != null) {
+            user.setBirthDate(request.getBirthDate());
+        }
+
+        if (request.getAvatar() != null) {
+            String avatarUrl = s3Service.uploadAvatar(
+                    userId,
+                    request.getAvatar()
+            );
+
+            user.setAvatarUrl(avatarUrl);
+        }
+
+        User savedUser = userRepository.save(user);
+
+        return UserProfileResponse.fromEntity(savedUser);
+    }
+
+    @Override
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = findUserById(userId);
+
+        if (user.isDeleted()) {
+            throw new BusinessException(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Không tìm thấy người dùng"
+            );
+        }
+
+        if (!request.newPassword().equals(request.confirmNewPassword())) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Xác nhận mật khẩu mới không khớp"
+            );
+        }
+
+        // BCrypt giới hạn mật khẩu theo byte, không phải số ký tự.
+        if (request.newPassword()
+                .getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Mật khẩu mới không được vượt quá 72 byte UTF-8"
+            );
+        }
+
+        if (!passwordEncoder.matches(
+                request.oldPassword(),
+                user.getPassword()
+        )) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Mật khẩu cũ không chính xác"
+            );
+        }
+
+        if (passwordEncoder.matches(
+                request.newPassword(),
+                user.getPassword()
+        )) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "Mật khẩu mới phải khác mật khẩu cũ"
+            );
+        }
+
+        user.setPassword(
+                passwordEncoder.encode(request.newPassword())
+        );
+
+        userRepository.save(user);
+    }
+
 }

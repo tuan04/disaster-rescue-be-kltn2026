@@ -3,12 +3,14 @@ package iuh.fit.userservice.repository;
 import iuh.fit.userservice.entity.User;
 import iuh.fit.userservice.enums.RoleInTeamEnum;
 import iuh.fit.userservice.enums.VerifiedStatusEnum;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,5 +27,15 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
    @EntityGraph(attributePaths = "volunteerProfile")
    Page<User> findAll(Specification<User> spec, Pageable pageable);
+
+
+
+   @Query("""
+        select u.id
+        from User u
+        where u.isDeleted = false
+        order by u.id
+        """)
+   Slice<UUID> findNotificationUserIds(Pageable pageable);
 
 }

@@ -48,6 +48,7 @@ public class AssignmentService {
 
     private Assignment findById(UUID assignmentId) {
         return assignmentRepository.findById(assignmentId)
+                .or(() -> assignmentRepository.findByRescueRequestIdAndStatus(assignmentId, AssignmentStatus.ACCEPTED))
                 .orElseThrow(
                         () -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy nhiệm vụ cứu hộ"));
     }
@@ -69,7 +70,6 @@ public class AssignmentService {
         if (initialStatus == AssignmentStatus.ACCEPTED) {
             rescueRequest.setStatus(RequestStatus.ACCEPTED);
         }
-
 
         return assignmentRepository.save(assignment);
     }
@@ -113,7 +113,7 @@ public class AssignmentService {
     }
 
     @Transactional
-    public void acceptAssignedRescueByTeam(UUID teamId, UUID requestId, String note) {
+    public Assignment acceptAssignedRescueByTeam(UUID teamId, UUID requestId, String note) {
         if (teamId == null || requestId == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "teamId và requestId không được để trống");
         }
@@ -149,7 +149,7 @@ public class AssignmentService {
                     : note.trim());
         }
 
-        assignmentRepository.save(assignment);
+        return assignmentRepository.save(assignment);
     }
 
     @Transactional

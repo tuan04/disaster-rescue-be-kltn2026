@@ -89,13 +89,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/v1/sos-requests"
-                        ).hasAnyRole("ADMIN", "COORDINATOR")
+                        ).permitAll()
 
                         // Dữ liệu quản lý:
                         // đặt rule cụ thể trước rule /map-points/{id}.
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/map-points/sos-requests",
                                 "/api/v1/locations/pages"
                         ).hasAnyRole("ADMIN", "COORDINATOR")
 
@@ -131,21 +130,11 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/map-points",
+                                "/api/v1/map-points/sos-requests",
                                 "/api/v1/map-points/strategic-points",
                                 "/api/v1/map-points/rescue-requests-pending",
                                 "/api/v1/map-points/{id}",
                                 "/api/v1/routes"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "COORDINATOR",
-                                "LEADER",
-                                "RESCUER"
-                        )
-
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/map-points"
                         ).permitAll()
 
 

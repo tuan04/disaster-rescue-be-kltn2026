@@ -94,8 +94,13 @@ public class SecurityConfig {
                                 "/api/v1/notifications/{id}"
                         ).authenticated()
 
-                        // Chưa mở /ws ở bước REST này.
-                        // Các endpoint khác cũng bị từ chối mặc định.
+                        // Cho phép bắt tay kết nối WebSocket (Handshake endpoint và SockJS)
+                        .requestMatchers(
+                                "/ws",
+                                "/ws/**"
+                        ).permitAll()
+
+                        // Các endpoint khác bị từ chối mặc định.
                         .anyRequest().denyAll()
                 )
 

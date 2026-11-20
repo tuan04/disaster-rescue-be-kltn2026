@@ -5,9 +5,11 @@ import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.grpc.TeamInfoResponse;
 import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
@@ -15,6 +17,8 @@ import iuh.fit.dispatchservice.enums.RequestStatus;
 import iuh.fit.dispatchservice.repositories.AssignmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -302,6 +306,8 @@ public class AssignmentService {
                 .toList();
     }
 
+
+
     public AssignmentResponse getActiveAssignmentByRequestId(UUID requestId) {
         if (requestId == null) {
             return null;
@@ -311,5 +317,47 @@ public class AssignmentService {
                 .findByRescueRequestIdAndStatus(requestId, AssignmentStatus.ACCEPTED)
                 .map(AssignmentResponse::fromEntity)
                 .orElse(null);
+    }
+
+
+
+    @Transactional(readOnly = true)
+    public PageResponse<OngoingAssignmentResponse> getOngoingAssignments(
+            int page,
+            int size
+    ) {
+        if (page < 0) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "page phải lớn hơn hoặc bằng 0"
+            );
+        }
+
+        if (size < 1 || size > 100) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_INPUT,
+                    "size phải từ 1 đến 100"
+            );
+        }
+
+        List<AssignmentStatus> assignmentStatuses = List.of(
+                AssignmentStatus.ASSIGNED,
+                AssignmentStatus.ACCEPTED
+        );
+
+        List<RequestStatus> requestStatuses = List.of(
+                RequestStatus.PENDING,
+                RequestStatus.ACCEPTED
+        );
+
+        // Thứ tự sắp xếp đã được quy định trong truy vấn repository.
+        Page<OngoingAssignmentResponse> result =
+                assignmentRepository.findOngoingAssignments(
+                        assignmentStatuses,
+                        requestStatuses,
+                        PageRequest.of(page, size)
+                );
+
+        return PageResponse.from(result);
     }
 }

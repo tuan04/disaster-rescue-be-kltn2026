@@ -43,3 +43,11 @@ eureka:
 rsa:
   private-key-path: ${RSA_PRIVATE_PATH}
   public-key-path: ${RSA_PUBLIC_PATH}
+
+aws:
+  s3:
+    bucket-name: ${BUCKET_NAME}
+    region: ${REGION}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}

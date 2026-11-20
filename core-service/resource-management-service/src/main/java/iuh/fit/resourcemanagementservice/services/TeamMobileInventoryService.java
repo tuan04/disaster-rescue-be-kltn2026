@@ -26,65 +26,79 @@ public class TeamMobileInventoryService {
     private final ItemService itemService;
 
     /**
-     * Thêm mới vật phẩm vào kho lưu động của đội cứu hộ
+     * Bổ sung danh sách vật phẩm vào kho lưu động của đội cứu hộ (hỗ trợ cộng dồn tự động)
      */
     @Transactional
-    public TeamMobileInventoryResponse createInventory(CreateTeamMobileInventoryRequest request) {
-        Optional<TeamMobileInventory> existingOpt = inventoryRepository.findByCampaignTeam_IdAndItem_Id(
-                request.campaignTeamId(),
-                request.itemId()
-        );
+    public List<TeamMobileInventoryResponse> createInventories(CreateTeamMobileInventoryRequest request) {
+        CampaignTeam campaignTeam = campaignTeamService.findById(request.campaignTeamId());
+        List<TeamMobileInventory> savedList = new java.util.ArrayList<>();
 
-        TeamMobileInventory inventoryToSave;
+        for (CreateTeamMobileInventoryRequest.TeamItemImport itemReq : request.items()) {
+            Optional<TeamMobileInventory> existingOpt = inventoryRepository.findByCampaignTeam_IdAndItem_Id(
+                    request.campaignTeamId(),
+                    itemReq.itemId()
+            );
 
-        if (existingOpt.isPresent()) {
-            TeamMobileInventory existing = existingOpt.get();
-            if (Boolean.TRUE.equals(existing.getIsDeleted())) {
-                // Nếu đã từng bị xóa mềm (isDeleted = true), tái kích hoạt lại bản ghi với số lượng mới
-                existing.setCurrentQuantity(request.currentQuantity());
-                existing.setIsDeleted(false);
+            TeamMobileInventory inventoryToSave;
+
+            if (existingOpt.isPresent()) {
+                TeamMobileInventory existing = existingOpt.get();
+                if (Boolean.TRUE.equals(existing.getIsDeleted())) {
+                    // Nếu đã từng bị xóa mềm (isDeleted = true), tái kích hoạt lại bản ghi với số lượng mới
+                    existing.setCurrentQuantity(itemReq.currentQuantity());
+                    existing.setIsDeleted(false);
+                } else {
+                    // Nếu đã có trong kho lưu động của đội -> Tự động cộng dồn
+                    int current = existing.getCurrentQuantity() != null ? existing.getCurrentQuantity() : 0;
+                    existing.setCurrentQuantity(current + itemReq.currentQuantity());
+                }
+                inventoryToSave = existing;
             } else {
-                // Nếu đã có trong kho lưu động của đội
-                int current = existing.getCurrentQuantity() != null ? existing.getCurrentQuantity() : 0;
-                existing.setCurrentQuantity(current + request.currentQuantity());
+                Item item = itemService.findById(itemReq.itemId());
+                inventoryToSave = TeamMobileInventory.builder()
+                        .campaignTeam(campaignTeam)
+                        .item(item)
+                        .currentQuantity(itemReq.currentQuantity())
+                        .isDeleted(false)
+                        .build();
             }
-            inventoryToSave = existing;
-        } else {
-            CampaignTeam campaignTeam = campaignTeamService.findById(request.campaignTeamId());
-            Item item = itemService.findById(request.itemId());
-            inventoryToSave = TeamMobileInventory.builder()
-                    .campaignTeam(campaignTeam)
-                    .item(item)
-                    .currentQuantity(request.currentQuantity())
-                    .isDeleted(false)
-                    .build();
+
+            savedList.add(inventoryRepository.save(inventoryToSave));
         }
 
-        TeamMobileInventory saved = inventoryRepository.save(inventoryToSave);
-        return TeamMobileInventoryResponse.fromEntity(saved);
+        return savedList.stream()
+                .map(TeamMobileInventoryResponse::fromEntity)
+                .toList();
     }
 
     /**
-     * Cập nhật thông tin tồn kho lưu động (số lượng, trạng thái xóa mềm)
+     * Cập nhật thông tin tồn kho lưu động hàng loạt (số lượng, trạng thái xóa mềm)
      */
     @Transactional
-    public TeamMobileInventoryResponse updateInventory(UUID id, UpdateTeamMobileInventoryRequest request) {
-        TeamMobileInventory existing = inventoryRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new BusinessException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        "Không tìm thấy thông tin tồn kho lưu động với ID: " + id
-                ));
+    public List<TeamMobileInventoryResponse> updateInventories(List<UpdateTeamMobileInventoryRequest> requests) {
+        List<TeamMobileInventory> updatedList = new java.util.ArrayList<>();
 
-        if (request.currentQuantity() != null) {
-            existing.setCurrentQuantity(request.currentQuantity());
+        for (UpdateTeamMobileInventoryRequest req : requests) {
+            TeamMobileInventory existing = inventoryRepository.findByIdAndIsDeletedFalse(req.id())
+                    .orElseThrow(() -> new BusinessException(
+                            ErrorCode.RESOURCE_NOT_FOUND,
+                            "Không tìm thấy thông tin tồn kho lưu động với ID: " + req.id()
+                    ));
+
+            if (req.currentQuantity() != null) {
+                existing.setCurrentQuantity(req.currentQuantity());
+            }
+
+            if (req.isDeleted() != null) {
+                existing.setIsDeleted(req.isDeleted());
+            }
+
+            updatedList.add(inventoryRepository.save(existing));
         }
 
-        if (request.isDeleted() != null) {
-            existing.setIsDeleted(request.isDeleted());
-        }
-
-        TeamMobileInventory updated = inventoryRepository.save(existing);
-        return TeamMobileInventoryResponse.fromEntity(updated);
+        return updatedList.stream()
+                .map(TeamMobileInventoryResponse::fromEntity)
+                .toList();
     }
 
     /**

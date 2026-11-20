@@ -43,6 +43,10 @@ public class RescueRequest {
     @Column(name = "complete_at")
     private LocalDateTime completeAt;
 
+    @Column(name = "safe_at")
+    private LocalDateTime safeAt;
+
+
     @Enumerated(EnumType.STRING)
     private RequestStatus status;
 

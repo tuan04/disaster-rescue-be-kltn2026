@@ -118,6 +118,8 @@ public class SecurityConfig {
                                 "/api/v1/locations/{id}"
                         ).hasAnyRole("ADMIN", "COORDINATOR")
 
+
+
                         // Mọi tài khoản hợp lệ được gửi báo cáo hiểm họa.
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -143,6 +145,11 @@ public class SecurityConfig {
                                 "/api/v1/map-points/{id}",
                                 "/api/v1/routes"
                         ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/assignments/ongoing"
+                        ).hasAnyRole("ADMIN", "COORDINATOR")
 
                         // Quản trị hoặc điều phối phân công đội cứu hộ.
                         .requestMatchers(
@@ -170,6 +177,15 @@ public class SecurityConfig {
                                 "/api/v1/assignments/rescue-requests/{requestId}/active"
                         ).permitAll()
 
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/sos-requests/statistics/waiting",
+                                "/api/v1/sos-requests/statistics/processing",
+                                "/api/v1/sos-requests/statistics/completed",
+                                "/api/v1/sos-requests/statistics/chart"
+
+                        ).hasAnyRole("ADMIN", "COORDINATOR")
+
                         // Đọc thông tin phân công.
                         //
                         // Bước tiếp theo cần giới hạn LEADER/RESCUER
@@ -189,6 +205,10 @@ public class SecurityConfig {
                         // Không tự động mở các endpoint được thêm về sau.
                         .anyRequest().denyAll()
                 )
+
+
+
+
 
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt

@@ -74,6 +74,11 @@ public class SecurityConfig {
                                 DispatcherType.ERROR
                         ).permitAll()
 
+                        .requestMatchers(
+                                "/ws",
+                                "/ws/**"
+                        ).permitAll()
+
                         // Xem danh sách thông báo của chính mình.
                         .requestMatchers(
                                 HttpMethod.GET,

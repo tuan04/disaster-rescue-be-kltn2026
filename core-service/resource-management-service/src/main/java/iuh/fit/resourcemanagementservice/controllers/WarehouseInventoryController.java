@@ -32,25 +32,24 @@ public class WarehouseInventoryController {
     }
 
     /**
-     * API Thêm mới vật phẩm vào kho chiến dịch
+     * API Nhập danh sách vật phẩm vào kho chiến dịch (hỗ trợ cộng dồn tự động)
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<CampaignWarehouseInventoryResponse>> createInventory(
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> createInventories(
             @Valid @RequestBody CreateCampaignWarehouseInventoryRequest request
     ) {
-        CampaignWarehouseInventoryResponse response = inventoryService.createInventory(request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thêm vật phẩm vào kho chiến dịch thành công"));
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.createInventories(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Nhập vật phẩm vào kho thành công"));
     }
 
     /**
-     * API Cập nhật thông tin tồn kho
+     * API Cập nhật thông tin tồn kho hàng loạt
      */
-    @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse<CampaignWarehouseInventoryResponse>> updateInventory(
-            @PathVariable("id") UUID id,
-            @Valid @RequestBody UpdateCampaignWarehouseInventoryRequest request
+    @PatchMapping
+    public ResponseEntity<ApiResponse<List<CampaignWarehouseInventoryResponse>>> updateInventories(
+            @Valid @RequestBody List<UpdateCampaignWarehouseInventoryRequest> requests
     ) {
-        CampaignWarehouseInventoryResponse response = inventoryService.updateInventory(id, request);
+        List<CampaignWarehouseInventoryResponse> response = inventoryService.updateInventories(requests);
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin tồn kho thành công"));
     }
 
@@ -64,6 +63,4 @@ public class WarehouseInventoryController {
         inventoryService.deleteInventory(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa vật phẩm khỏi kho chiến dịch thành công"));
     }
-
-
 }

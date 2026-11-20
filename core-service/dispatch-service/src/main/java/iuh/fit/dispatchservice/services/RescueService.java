@@ -60,6 +60,4 @@ public class RescueService {
         );
         return PageResponse.from(responsePage);
     }
-
-
 }

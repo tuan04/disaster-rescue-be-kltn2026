@@ -11,7 +11,6 @@ import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.services.AssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +36,6 @@ public class AssignmentController {
         return ResponseEntity.ok(ApiResponse.success(AssignmentResponse.fromEntity(assignment)));
     }
 
-
     @PostMapping("/rescue-requests/{requestId}/assign")
     public ResponseEntity<ApiResponse<List<AssignmentResponse>>> assignRescueByLeader(
             @PathVariable UUID requestId,
@@ -50,7 +48,6 @@ public class AssignmentController {
         return ResponseEntity.ok(ApiResponse.success(assignments.stream().map(AssignmentResponse::fromEntity).toList()));
     }
 
-
     @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<List<AssignmentResponse>>> getAssignmentByRequestId(
             @PathVariable("requestId") UUID requestId) {
@@ -59,16 +56,16 @@ public class AssignmentController {
     }
 
     @PostMapping("/teams/{teamId}/rescue-requests/{requestId}/accept")
-    public ResponseEntity<ApiResponse<Void>> acceptAssignedRescue(
+    public ResponseEntity<ApiResponse<AssignmentResponse>> acceptAssignedRescue(
             @PathVariable UUID teamId,
             @PathVariable UUID requestId,
             @RequestParam(required = false) String note) {
-        assignmentService.acceptAssignedRescueByTeam(
+        Assignment assignment = assignmentService.acceptAssignedRescueByTeam(
                 teamId,
                 requestId,
                 note
         );
-        return ResponseEntity.ok(ApiResponse.success(null, "Tiếp nhận nhiệm vụ cứu hộ thành công"));
+        return ResponseEntity.ok(ApiResponse.success(AssignmentResponse.fromEntity(assignment), "Tiếp nhận nhiệm vụ cứu hộ thành công"));
     }
 
     @PostMapping("/teams/{teamId}/rescue-requests/{requestId}/reject")

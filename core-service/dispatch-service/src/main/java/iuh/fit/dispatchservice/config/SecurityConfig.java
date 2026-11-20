@@ -126,15 +126,11 @@ public class SecurityConfig {
                                 "/api/v1/map-points/hazard-reports"
                         ).authenticated()
 
-                        // Các API bản đồ phục vụ nghiệp vụ cứu hộ.
-                        // Chưa mở cho CITIZEN vì hiện chưa lọc SOS theo chủ.
+                        // Các API bản đồ phục vụ nghiệp vụ quản trị và điều phối (đặt trước /map-points/{id})
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/map-points",
                                 "/api/v1/map-points/strategic-points",
-                                "/api/v1/map-points/rescue-requests-pending",
-                                "/api/v1/map-points/{id}",
-                                "/api/v1/routes"
+                                "/api/v1/map-points/rescue-requests-pending"
                         ).hasAnyRole(
                                 "ADMIN",
                                 "COORDINATOR",
@@ -142,12 +138,13 @@ public class SecurityConfig {
                                 "RESCUER"
                         )
 
-
+                        // Các API bản đồ công khai phục vụ cộng đồng xem bản đồ thảm họa và lộ trình cứu hộ
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/map-points"
+                                "/api/v1/map-points",
+                                "/api/v1/map-points/{id}",
+                                "/api/v1/routes"
                         ).permitAll()
-
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -174,6 +171,11 @@ public class SecurityConfig {
                                 "/api/v1/assignments/{assignmentId}/cancel"
                         ).hasRole("LEADER")
 
+                        // Cho phép người dân (kể cả khách vãng lai) theo dõi ca cứu hộ đang hoạt động của mình
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/assignments/rescue-requests/{requestId}/active"
+                        ).permitAll()
 
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -192,7 +194,6 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/v1/assignments/teams/{teamId}/pending",
                                 "/api/v1/assignments/teams/{teamId}/active",
-                                "/api/v1/assignments/rescue-requests/{requestId}/active",
                                 "/api/v1/assignments/{requestId}"
                         ).hasAnyRole(
                                 "ADMIN",

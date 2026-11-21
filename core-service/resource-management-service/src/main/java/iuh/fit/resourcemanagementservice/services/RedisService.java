@@ -78,7 +78,7 @@ public class RedisService {
 
         Object value = redisTemplate.opsForValue().get(key);
 
-        return convertToTeamLocation(value);
+        return withTeamId(convertToTeamLocation(value), campaignTeamId.toString());
     }
 
     /**
@@ -90,15 +90,22 @@ public class RedisService {
             return Collections.emptyList();
         }
 
-        List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+        List<String> orderedKeys = List.copyOf(keys);
+        List<Object> values = redisTemplate.opsForValue().multiGet(orderedKeys);
         if (values == null) {
             return Collections.emptyList();
         }
 
-        return values.stream()
-                .filter(Objects::nonNull)
-                .map(this::convertToTeamLocation)
+        return java.util.stream.IntStream.range(0, values.size())
+                .filter(index -> values.get(index) != null)
+                .mapToObj(index -> withTeamId(convertToTeamLocation(values.get(index)),
+                        orderedKeys.get(index).substring(TEAM_LOCATION_KEY.length())))
                 .toList();
+    }
+
+    // Older Redis snapshots predate teamId; recover it from their stable key.
+    private TeamLocation withTeamId(TeamLocation location, String teamId) {
+        return location == null ? null : location.toBuilder().teamId(teamId).build();
     }
 
     private TeamLocation convertToTeamLocation(Object value) {

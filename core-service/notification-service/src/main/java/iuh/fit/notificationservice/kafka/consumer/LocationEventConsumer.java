@@ -20,5 +20,7 @@ public class LocationEventConsumer {
 
         webSocketNotificationService.broadcast("/topic/teams/%s/location".formatted(teamLocation.teamId()),
                 teamLocation);
+        // A map subscribes once, including teams that start reporting after it opens.
+        webSocketNotificationService.broadcast("/topic/teams/locations", teamLocation);
     }
 }

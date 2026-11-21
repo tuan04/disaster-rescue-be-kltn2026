@@ -84,8 +84,6 @@ public class SecurityConfig {
                                 "/api/v1/locations"
                         ).permitAll()
 
-                        // DTO cập nhật SOS hiện có dữ liệu nghiệp vụ.
-                        // Chỉ quản trị và điều phối được sửa qua API này.
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/v1/sos-requests"

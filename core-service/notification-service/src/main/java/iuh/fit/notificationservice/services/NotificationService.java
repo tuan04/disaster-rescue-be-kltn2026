@@ -8,7 +8,6 @@ import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
 import iuh.fit.common.response.PageResponse;
 import iuh.fit.notificationservice.entity.Notification;
 import iuh.fit.notificationservice.entity.UserNotification;
-import iuh.fit.notificationservice.redis.LocationTrackingService;
 import iuh.fit.notificationservice.repositories.NotificationRepository;
 import iuh.fit.notificationservice.repositories.UserNotificationRepository;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
@@ -19,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,10 +25,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private static final int DEFAULT_RADIUS_METERS = 5000;
-    private static final String NOTIFICATION_TYPE_SOS = "SOS_ALERT";
 
-    private final LocationTrackingService locationTrackingService;
     private final NotificationRepository notificationRepository;
     private final UserNotificationRepository userNotificationRepository;
     private final WebSocketNotificationService webSocketNotificationService;
@@ -69,76 +64,23 @@ public class NotificationService {
         webSocketNotificationService.sendToUser(targetUserId, socketMessage);
     }
 
-    @Transactional
+    /** Live map alerts are ephemeral; only the rescue request itself is persisted. */
     public void processSOSEvent(SOSResponse event) {
-        if (event == null) {
-            return;
-        }
+        if (event == null || event.id() == null) return;
 
-        int radius = (event.radiusMeters() != null && event.radiusMeters() > 0)
-                ? event.radiusMeters()
-                : DEFAULT_RADIUS_METERS;
-
-        List<String> teamIds = locationTrackingService.findTeamsInRadius(
-                event.longitude(),
-                event.latitude(),
-                radius
-        );
-
-        System.out.println("Found teamId in radius: " + teamIds);
-
-        if (teamIds.isEmpty()) {
-            return;
-        }
-
-        List<UUID> validUserIds = new ArrayList<>();
-        for (String rawId : teamIds) {
-            validUserIds.add(UUID.fromString(rawId));
-        }
-
-        if (validUserIds.isEmpty()) {
-            return;
-        }
-
-        String title = String.format("Có người cần cứu hộ khẩn cấp cách bạn trong phạm vi %dm!", radius);
-        String content = (event.content() != null && !event.content().isBlank())
-                ? event.content()
-                : "Yêu cầu cứu hộ khẩn cấp tại tọa độ [" + event.latitude() + ", " + event.longitude() + "]";
-
-        Notification notification = Notification.builder()
+        boolean created = "CREATED".equals(event.eventType());
+        NotificationSocketMessage message = NotificationSocketMessage.builder()
+                .id(event.id())
                 .referenceId(event.id())
-                .type(NOTIFICATION_TYPE_SOS)
-                .title(title)
-                .content(content)
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        List<UserNotification> userNotifications = validUserIds.stream()
-                .map(userId -> UserNotification.builder()
-                        .userId(userId)
-                        .notification(savedNotification)
-                        .isRead(false)
-                        .isDeleted(false)
-                        .build())
-                .toList();
-
-        userNotificationRepository.saveAll(userNotifications);
-
-        NotificationSocketMessage socketMessage = NotificationSocketMessage.builder()
-                .id(savedNotification.getId())
-                .referenceId(savedNotification.getReferenceId())
-                .type(savedNotification.getType())
-                .title(savedNotification.getTitle())
-                .content(savedNotification.getContent())
-                .createdAt(savedNotification.getCreatedAt())
+                .type(created ? "SOS_ALERT" : "SOS_UPDATED")
+                .title(created ? "Có yêu cầu cứu hộ SOS mới" : "Yêu cầu cứu hộ đã cập nhật")
+                .createdAt(java.time.LocalDateTime.now())
                 .latitude(event.latitude())
                 .longitude(event.longitude())
-                .emergencyLevel(event.emergencyLevel() != null ? event.emergencyLevel() : "HIGH")
-                .reporterPhone(event.reporterPhone())
+                .emergencyLevel(event.emergencyLevel())
                 .build();
-
-        webSocketNotificationService.sendToUsers(validUserIds, socketMessage);
+        // Public map channel: do not broadcast phone numbers or free-form personal content.
+        webSocketNotificationService.broadcast("/topic/map/sos", message);
     }
 
     @Transactional(readOnly = true)

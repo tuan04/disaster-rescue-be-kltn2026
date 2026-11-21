@@ -72,6 +72,7 @@ public class SOSService {
         RescueRequest savedRescueRequest = rescueRequestRepository.save(rescueRequest);
 
         SOSResponse req = SOSResponse.builder()
+                .eventType("CREATED")
                 .id(savedRescueRequest.getId())
                 .reporterPhone(savedRescueRequest.getReporterPhone())
                 .emergencyLevel(savedRescueRequest.getEmergencyLevel() != null ? savedRescueRequest.getEmergencyLevel().name() : null)
@@ -106,6 +107,7 @@ public class SOSService {
         }
 
         SOSResponse response = SOSResponse.builder()
+                .eventType("UPDATED")
                 .id(updatedRescueRequest.getId())
                 .reporterPhone(updatedRescueRequest.getReporterPhone())
                 .emergencyLevel(updatedRescueRequest.getEmergencyLevel() != null ? updatedRescueRequest.getEmergencyLevel().name() : null)

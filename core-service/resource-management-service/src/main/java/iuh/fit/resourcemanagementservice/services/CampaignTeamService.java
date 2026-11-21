@@ -361,6 +361,7 @@ public class CampaignTeamService {
         CampaignTeam team = this.getActiveTeamByLeaderId(leaderId);
 
         TeamLocation teamLocation = TeamLocation.builder()
+                .teamId(team.getId().toString())
                 .latitude(request.latitude())
                 .longitude(request.longitude())
                 .speed(request.speed())

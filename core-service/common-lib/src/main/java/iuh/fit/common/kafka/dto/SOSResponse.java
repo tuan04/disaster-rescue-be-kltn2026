@@ -14,6 +14,7 @@ public record SOSResponse(
         String source,
         double latitude,
         double longitude,
-        Integer radiusMeters
+        Integer radiusMeters,
+        String eventType
 ) {
 }

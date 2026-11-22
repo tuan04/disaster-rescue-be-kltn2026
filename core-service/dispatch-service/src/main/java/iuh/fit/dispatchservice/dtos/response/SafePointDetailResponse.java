@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record SafePointDetailResponse(
         UUID id,
+        String code,
         String name,
         String contactPhone,
         SafePointType safePointType,

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record HazardDetailResponse(
         UUID id,
+        String code,
         HazardType hazardType,
         String description,
         List<String> imageUrls,

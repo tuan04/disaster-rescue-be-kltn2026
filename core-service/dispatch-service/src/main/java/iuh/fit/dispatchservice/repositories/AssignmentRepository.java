@@ -57,6 +57,7 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
                 select new iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse(
                     a.id,
                     r.id,
+                    r.code,
                     a.campaignTeamId,
                     a.assignedTeamName,
                     a.status,

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public record UserListResponse(
         UUID id,
+        String code,
         String phone,
         String fullName,
         String avatarUrl,
@@ -32,6 +33,7 @@ public record UserListResponse(
 
         return new UserListResponse(
                 user.getId(),
+                user.getCode(),
                 user.getPhone(),
                 user.getFullName(),
                 user.getAvatarUrl(),

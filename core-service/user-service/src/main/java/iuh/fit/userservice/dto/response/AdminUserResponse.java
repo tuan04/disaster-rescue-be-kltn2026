@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public record AdminUserResponse(
         UUID id,
+        String code,
         String phone,
         String fullName,
         SexEnum sex,
@@ -40,6 +41,7 @@ public record AdminUserResponse(
 
         return new AdminUserResponse(
                 user.getId(),
+                user.getCode(),
                 user.getPhone(),
                 user.getFullName(),
                 user.getSex(),

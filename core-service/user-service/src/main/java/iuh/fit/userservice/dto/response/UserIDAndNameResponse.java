@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record UserIDAndNameResponse (
         UUID id,
+        String code,
         String name
 ) {
 }

@@ -7,6 +7,8 @@ option java_multiple_files = true;
 service UserGrpcService {
     rpc GetUsersByIds (GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
     rpc GetUserById (GetUserByIdRequest) returns (UserInfoGrpcResponse);
+    rpc GetNotificationUserIds (GetNotificationUserIdsRequest)
+        returns (GetNotificationUserIdsResponse);
 }
 
 message GetUsersByIdsRequest {
@@ -28,4 +30,15 @@ message UserInfoGrpcResponse {
     string role = 4;
     string avatar_url = 5;
     string sex = 6;
+}
+
+
+message GetNotificationUserIdsRequest {
+    int32 page = 1;
+    int32 size = 2;
+}
+
+message GetNotificationUserIdsResponse {
+    repeated string user_ids = 1;
+    bool has_next = 2;
 }

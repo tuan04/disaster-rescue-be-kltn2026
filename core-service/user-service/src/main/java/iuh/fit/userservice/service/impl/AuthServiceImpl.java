@@ -42,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(RoleEnum.CITIZEN)
                 .isDeleted(false)
                 .build();
-        User saveUser = userRepository.save(user);
+        User saveUser = userRepository.saveAndFlush(user);
 
         otpRateLimitService.acquireForgotPasswordPermit(user.getPhone());
 

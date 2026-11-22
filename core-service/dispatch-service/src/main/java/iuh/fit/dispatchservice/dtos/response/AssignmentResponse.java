@@ -14,6 +14,7 @@ public class AssignmentResponse {
 
     private UUID id;
     private UUID requestId;
+    private String requestCode;
     private UUID campaignTeamId;
     private String assignedTeamName;
     private String leaderPhone;
@@ -25,6 +26,7 @@ public class AssignmentResponse {
         return AssignmentResponse.builder()
                 .id(assignment.getId())
                 .requestId(assignment.getRescueRequest().getId())
+                .requestCode(assignment.getRescueRequest().getCode())
                 .campaignTeamId(assignment.getCampaignTeamId())
                 .assignedTeamName(assignment.getAssignedTeamName())
                 .leaderPhone(assignment.getLeaderPhone())

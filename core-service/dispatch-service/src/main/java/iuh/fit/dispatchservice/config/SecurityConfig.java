@@ -84,18 +84,15 @@ public class SecurityConfig {
                                 "/api/v1/locations"
                         ).permitAll()
 
-                        // DTO cập nhật SOS hiện có dữ liệu nghiệp vụ.
-                        // Chỉ quản trị và điều phối được sửa qua API này.
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/v1/sos-requests"
-                        ).hasAnyRole("ADMIN", "COORDINATOR")
+                        ).permitAll()
 
                         // Dữ liệu quản lý:
                         // đặt rule cụ thể trước rule /map-points/{id}.
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/map-points/sos-requests",
                                 "/api/v1/locations/pages"
                         ).hasAnyRole("ADMIN", "COORDINATOR")
 
@@ -129,14 +126,11 @@ public class SecurityConfig {
                         // Các API bản đồ phục vụ nghiệp vụ quản trị và điều phối (đặt trước /map-points/{id})
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/api/v1/map-points/sos-requests",
                                 "/api/v1/map-points/strategic-points",
-                                "/api/v1/map-points/rescue-requests-pending"
-                        ).hasAnyRole(
-                                "ADMIN",
-                                "COORDINATOR",
-                                "LEADER",
-                                "RESCUER"
-                        )
+                                "/api/v1/map-points/rescue-requests-pending",
+                                "/api/v1/map-points/strategic-points"
+                        ).permitAll()
 
                         // Các API bản đồ công khai phục vụ cộng đồng xem bản đồ thảm họa và lộ trình cứu hộ
                         .requestMatchers(

@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public record TeamResponse(
         UUID id,
+        String code,
         UUID campaignId,
         String campaignName,
         TeamStatus status,
@@ -28,6 +29,7 @@ public record TeamResponse(
     public static TeamResponse fromEntity(CampaignTeam team) {
         return new TeamResponse(
                 team.getId(),
+                team.getCode(),
                 team.getCampaign() != null ? team.getCampaign().getId() : null,
                 team.getCampaign() != null ? team.getCampaign().getName() : null,
                 team.getStatus(),

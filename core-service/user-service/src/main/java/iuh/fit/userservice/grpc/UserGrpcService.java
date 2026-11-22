@@ -1,12 +1,11 @@
 package iuh.fit.userservice.grpc;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import iuh.fit.common.grpc.GetUsersByIdsRequest;
-import iuh.fit.common.grpc.GetUsersByIdsResponse;
-import iuh.fit.common.grpc.UserInfoGrpcResponse;
-import iuh.fit.common.grpc.UserGrpcServiceGrpc;
+import iuh.fit.common.grpc.*;
 import iuh.fit.userservice.entity.User;
 import iuh.fit.userservice.repository.UserRepository;
+import iuh.fit.userservice.service.impl.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.service.GrpcService;
@@ -21,6 +20,7 @@ import java.util.UUID;
 public class UserGrpcService extends UserGrpcServiceGrpc.UserGrpcServiceImplBase {
 
     private final UserRepository userRepository;
+    private final UserServiceImpl userService;
 
     @Override
     public void getUsersByIds(GetUsersByIdsRequest request, StreamObserver<GetUsersByIdsResponse> responseObserver) {
@@ -49,5 +49,53 @@ public class UserGrpcService extends UserGrpcServiceGrpc.UserGrpcServiceImplBase
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+
+    @Override
+    public void getNotificationUserIds(
+            GetNotificationUserIdsRequest request,
+            StreamObserver<GetNotificationUserIdsResponse> observer
+    ) {
+        int page = request.getPage();
+        int size = request.getSize();
+
+        if (page < 0 || size < 1 || size > 1000) {
+            observer.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription(
+                                    "page phải >= 0 và size phải từ 1 đến 1000"
+                            )
+                            .asRuntimeException()
+            );
+            return;
+        }
+
+        try {
+            var userPage = userService.getUserIds(page, size);
+
+            var response = GetNotificationUserIdsResponse.newBuilder()
+                    .addAllUserIds(
+                            userPage.getContent().stream()
+                                    .map(UUID::toString)
+                                    .toList()
+                    )
+                    .setHasNext(userPage.hasNext())
+                    .build();
+
+            observer.onNext(response);
+            observer.onCompleted();
+
+        } catch (Exception exception) {
+            log.error("Không lấy được danh sách userId nhận thông báo", exception);
+
+            observer.onError(
+                    Status.INTERNAL
+                            .withDescription(
+                                    "Không lấy được danh sách người nhận"
+                            )
+                            .asRuntimeException()
+            );
+        }
     }
 }

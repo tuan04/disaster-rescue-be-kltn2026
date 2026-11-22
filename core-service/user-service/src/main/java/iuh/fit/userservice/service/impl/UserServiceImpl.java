@@ -26,7 +26,9 @@ import iuh.fit.userservice.specification.UserSpecification;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -121,7 +123,7 @@ public class UserServiceImpl implements UserService {
     public List<UserIDAndNameResponse> getUserNames() {
         return userRepository.findByVolunteerProfile_VerifiedStatusAndVolunteerProfile_CurrentRoleInTeam(VerifiedStatusEnum.VERIFIED, RoleInTeamEnum.COORDINATOR)
                 .stream()
-                .map(user -> new UserIDAndNameResponse(user.getId(), user.getFullName()))
+                .map(user -> new UserIDAndNameResponse(user.getId(), user.getCode(), user.getFullName()))
                 .toList();
     }
 
@@ -366,6 +368,14 @@ public class UserServiceImpl implements UserService {
         );
 
         userRepository.save(user);
+    }
+
+
+    @Transactional(readOnly = true)
+    public Slice<UUID> getUserIds(int page, int size) {
+        return userRepository.findNotificationUserIds(
+                PageRequest.of(page, size)
+        );
     }
 
 }

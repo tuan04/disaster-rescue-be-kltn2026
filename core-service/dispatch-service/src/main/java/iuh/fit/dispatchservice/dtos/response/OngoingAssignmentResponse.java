@@ -8,6 +8,7 @@ import java.util.UUID;
 public record OngoingAssignmentResponse(
         UUID assignmentId,
         UUID requestId,
+        String requestCode,
         UUID campaignTeamId,
         String teamName,
         AssignmentStatus status,

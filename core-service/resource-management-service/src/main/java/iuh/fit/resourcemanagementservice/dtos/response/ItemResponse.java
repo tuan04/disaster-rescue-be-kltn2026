@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public record ItemResponse(
         UUID id,
+        String code,
         String name,
         String imageUrl,
         ItemUnit unit,
@@ -20,6 +21,7 @@ public record ItemResponse(
     public static ItemResponse fromEntity(Item item) {
         return ItemResponse.builder()
                 .id(item.getId())
+                .code(item.getCode())
                 .name(item.getName())
                 .imageUrl(item.getImageUrl())
                 .unit(item.getUnit())

@@ -139,7 +139,9 @@ public class SocialRescueDispatchService {
         }
 
         SOSResponse rescue = SOSResponse.builder()
+                .eventType("CREATED")
                 .id(savedRequest.getId())
+                .code(savedRequest.getCode())
                 .reporterPhone(savedRequest.getReporterPhone())
                 .emergencyLevel(savedRequest.getEmergencyLevel().name())
                 .content(savedRequest.getContent())

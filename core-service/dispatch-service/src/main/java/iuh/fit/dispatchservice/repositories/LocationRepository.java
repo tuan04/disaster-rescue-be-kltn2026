@@ -12,6 +12,9 @@ import java.util.UUID;
 
 public interface LocationRepository extends JpaRepository<Location, UUID>, JpaSpecificationExecutor<Location> {
 
+    @Query(value = "SELECT nextval('location_code_seq')", nativeQuery = true)
+    long nextCodeSequence();
+
 
     Optional<List<Location>> findByIsActiveTrue();
 

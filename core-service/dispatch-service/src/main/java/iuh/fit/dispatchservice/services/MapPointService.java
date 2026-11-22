@@ -2,6 +2,7 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
+import iuh.fit.common.kafka.dto.MapPointCreatedEvent;
 import iuh.fit.dispatchservice.dtos.request.CreateHazardReportRequest;
 import iuh.fit.dispatchservice.dtos.request.CreateSafePointRequest;
 import iuh.fit.dispatchservice.dtos.request.CreateWarehouseRequest;
@@ -30,6 +31,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +58,9 @@ public class MapPointService {
     private final S3Service s3Service;
     private final MapPointMapper mapPointMapper;
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
+    private final ApplicationEventPublisher applicationEventPublisher;
+
 
     public List<MapPointRes> getAllMapPoints(MapPointFilterRequest filter) {
         return mapPointSearchRepository.findMapPoints(filter);
@@ -148,7 +154,14 @@ public class MapPointService {
                 .managerPhone(request.getManagerPhone())
                 .isActive(true)
                 .build();
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        Warehouse savedWarehouse = warehouseRepository.saveAndFlush(warehouse);
+
+
+        publishMapPointCreated(
+                savedMapPoint,
+                savedWarehouse.getName(),
+                null
+        );
 
         return new MapPointDetailResponse(
                 savedMapPoint.getId(),
@@ -176,7 +189,7 @@ public class MapPointService {
             warehouse.setIsActive(request.getIsActive());
         }
 
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        Warehouse savedWarehouse = warehouseRepository.saveAndFlush(warehouse);
         return mapPointMapper.toResDTO(savedWarehouse);
     }
 
@@ -211,7 +224,14 @@ public class MapPointService {
                 .contactPhone(request.getContactPhone())
                 .isActive(true)
                 .build();
-        SafePoint savedSafePoint = safePointRepository.save(safePoint);
+        SafePoint savedSafePoint = safePointRepository.saveAndFlush(safePoint);
+
+
+        publishMapPointCreated(
+                savedMapPoint,
+                savedSafePoint.getName(),
+                null
+        );
 
         return new MapPointDetailResponse(
                 savedMapPoint.getId(),
@@ -298,7 +318,14 @@ public class MapPointService {
                 .imageUrls(allImageUrls)
                 .status(HazardStatus.ACTIVE)
                 .build();
-        HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
+        HazardReport savedHazardReport = hazardReportRepository.saveAndFlush(hazardReport);
+
+
+        publishMapPointCreated(
+                savedMapPoint,
+                null,
+                savedHazardReport.getDescription()
+        );
 
         return new MapPointDetailResponse(
                 savedMapPoint.getId(),
@@ -390,6 +417,30 @@ public class MapPointService {
                     mapPointMapper.toResDTO(rescue)
             );
         });
+    }
+
+    private void publishMapPointCreated(
+            MapPoint mapPoint,
+            String name,
+            String description
+    ) {
+        Point location = mapPoint.getLocation();
+
+        MapPointCreatedEvent event = new MapPointCreatedEvent(
+                mapPoint.getId(),
+                mapPoint.getPointType().name(),
+                name,
+                description,
+                mapPoint.getAddress(),
+                location != null ? location.getY() : null,
+                location != null ? location.getX() : null,
+                mapPoint.getLocationId(),
+                Instant.now()
+        );
+
+
+        applicationEventPublisher.publishEvent(event);
+
     }
 }
 

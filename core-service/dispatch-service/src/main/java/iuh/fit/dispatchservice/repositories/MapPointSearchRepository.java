@@ -123,13 +123,16 @@ public class MapPointSearchRepository {
                 mp.created_at,
                 hr.hazard_type,
                 hr.description AS hazard_description,
+                hr.code AS hazard_code,
                 hr.image_urls,
                 hr.status AS hazard_status,
                 sp.name AS safe_point_name,
+                sp.code AS safe_point_code,
                 sp.contact_phone AS safe_point_phone,
                 sp.safe_point_type,
                 sp.is_active AS safe_point_is_active,
                 wh.name AS warehouse_name,
+                wh.code AS warehouse_code,
                 wh.manager_phone,
                 wh.is_active AS warehouse_is_active
             """);
@@ -218,6 +221,7 @@ public class MapPointSearchRepository {
                     }
                     yield new HazardDetailResponse(
                             id,
+                            rs.getString("hazard_code"),
                             ht != null ? HazardType.valueOf(ht) : null,
                             rs.getString("hazard_description"),
                             images,
@@ -229,6 +233,7 @@ public class MapPointSearchRepository {
                     Boolean isActive = rs.getObject("safe_point_is_active", Boolean.class);
                     yield new SafePointDetailResponse(
                             id,
+                            rs.getString("safe_point_code"),
                             rs.getString("safe_point_name"),
                             rs.getString("safe_point_phone"),
                             spt != null ? SafePointType.valueOf(spt) : null,
@@ -239,6 +244,7 @@ public class MapPointSearchRepository {
                     Boolean isActive = rs.getObject("warehouse_is_active", Boolean.class);
                     yield new WarehouseDetailResponse(
                             id,
+                            rs.getString("warehouse_code"),
                             rs.getString("warehouse_name"),
                             rs.getString("manager_phone"),
                             isActive

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 public record RescueRequestListResponse(
         UUID id,
+        String code,
         UUID reporterId,
         String reporterPhone,
         String content,
@@ -44,6 +45,7 @@ public record RescueRequestListResponse(
 
         return new RescueRequestListResponse(
                 request.getId(),
+                request.getCode(),
                 request.getReporterId(),
                 request.getReporterPhone(),
                 request.getContent(),

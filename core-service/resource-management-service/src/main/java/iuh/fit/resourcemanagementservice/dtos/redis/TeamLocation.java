@@ -4,8 +4,9 @@ import lombok.Builder;
 
 import java.time.Instant;
 
-@Builder
+@Builder(toBuilder = true)
 public record TeamLocation(
+        String teamId,
         Double latitude,
         Double longitude,
         Double speed,

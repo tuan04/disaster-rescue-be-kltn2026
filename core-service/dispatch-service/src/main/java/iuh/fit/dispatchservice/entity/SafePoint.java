@@ -19,6 +19,11 @@ public class SafePoint {
     @Id
     private UUID id;
 
+    @org.hibernate.annotations.Generated(event = org.hibernate.generator.EventType.INSERT)
+    @org.hibernate.annotations.ColumnDefault("generate_safe_point_code()")
+    @Column(name = "code", nullable = false, unique = true, length = 32, updatable = false)
+    private String code;
+
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "id")
@@ -44,7 +49,7 @@ public class SafePoint {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     @PreUpdate

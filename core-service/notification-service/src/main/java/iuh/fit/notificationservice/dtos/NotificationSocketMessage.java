@@ -13,8 +13,8 @@ public record NotificationSocketMessage(
         String title,
         String content,
         LocalDateTime createdAt,
-        double latitude,
-        double longitude,
+        Double latitude,
+        Double longitude,
         String emergencyLevel,
         String reporterPhone
 ) {

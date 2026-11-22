@@ -7,6 +7,7 @@ import java.util.UUID;
 @Builder
 public record SOSResponse(
         UUID id,
+        String code,
         String reporterPhone,
         String emergencyLevel,
         String content,
@@ -14,6 +15,7 @@ public record SOSResponse(
         String source,
         double latitude,
         double longitude,
-        Integer radiusMeters
+        Integer radiusMeters,
+        String eventType
 ) {
 }

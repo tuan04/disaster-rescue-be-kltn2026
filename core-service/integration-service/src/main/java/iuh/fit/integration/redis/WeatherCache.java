@@ -21,7 +21,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 @Slf4j
 public class WeatherCache {
-    private static final String KEY_PREFIX = "weather:v2:";
+    private static final String KEY_PREFIX = "weather:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
 
     private final StringRedisTemplate redisTemplate;

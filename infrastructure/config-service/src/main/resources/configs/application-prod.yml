@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+  sql:
+    init:
+      # Tắt schema.sql ở prod vì user riêng từng service trên RDS không có quyền chạy CREATE EXTENSION postgis.
+      mode: ${SQL_INIT_MODE:never}
+
+eureka:
+  instance:
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    org.hibernate.SQL: WARN

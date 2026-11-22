@@ -8,16 +8,16 @@ spring:
     client:
       channel:
         user-service:
-          target: static://${USER_GRPC_HOST:localhost}:9091
-          
+          target: static://${USER_GRPC_HOST:localhost}:${USER_GRPC_PORT:9091}
+          negotiation-type: plaintext
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${RESOURCE_DB_NAME:resource_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:123456}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${RESOURCE_DB_NAME:resource_db}?currentSchema=${RESOURCE_DB_SCHEMA:${DB_SCHEMA:public}},public
+    username: ${RESOURCE_DB_USER:${DB_USER:postgres}}
+    password: ${RESOURCE_DB_PASSWORD:${DB_PASSWORD:123456}}
     driver-class-name: org.postgresql.Driver
   sql:
     init:
-      mode: always
+      mode: ${SQL_INIT_MODE:always}
   jpa:
     defer-datasource-initialization: true
     hibernate:
@@ -49,20 +49,14 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
 aws:
   s3:
     bucket-name: ${BUCKET_NAME}
     region: ${REGION}
   credentials:
-    access-key: ${AWS_ACCESS_KEY_ID}
-    secret-key: ${AWS_SECRET_ACCESS_KEY}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
 social:
   outbox:

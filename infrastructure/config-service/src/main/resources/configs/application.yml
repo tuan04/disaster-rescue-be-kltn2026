@@ -1,0 +1,14 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    # Trên EC2 Docker multi-host, truyền biến môi trường EUREKA_INSTANCE_IP_ADDRESS=<EC2_PRIVATE_IP>
+    # Spring Boot tự bind vào eureka.instance.ip-address khi biến được set (không đặt default rỗng để tránh đè auto-detect ở dev).
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

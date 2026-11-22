@@ -1,6 +1,10 @@
 server:
   port: 8000
 
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
 spring:
   data:
     redis:
@@ -14,9 +18,7 @@ spring:
           globalcors:
             cors-configurations:
               "[/**]":
-                allowedOrigins:
-                  - "http://localhost:5173"
-                  - "http://localhost:3000"
+                allowedOrigins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
                 allowedOriginPatterns:
                   - "http://localhost:*"
                 allowedMethods:
@@ -29,36 +31,12 @@ spring:
                 allowedHeaders: "*"
                 allowCredentials: true
 
-
           routes:
-            - id: user-service
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/api/v1/users/**, /api/v1/auth/**
-
-            - id: dispatch-service
-              uri: lb://DISPATCH-SERVICE
-              predicates:
-                - Path=/api/v1/dispatches/**, /api/v1/map-points/**, /api/v1/sos-requests/**, /api/v1/assignments/**, /api/v1/routes/**, /api/v1/locations/**
-
-
-
-            - id: resource-management-service
-              uri: lb://RESOURCE-MANAGEMENT-SERVICE
-              predicates:
-                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/campaign-members/**, /api/v1/teams/**, /api/v1/items, /api/v1/items/**, /api/v1/inventories/**, /api/v1/inventories
-            - id: integration-service
-              uri: lb://INTEGRATION-SERVICE
-              predicates:
-                - Path=/api/v1/ai/**, /api/v1/news/**, /api/v1/sms/**, /api/v1/social-feeds/**
-            - id: notification-service
-              uri: lb://NOTIFICATION-SERVICE
-              predicates:
-                - Path=/api/v1/notifications, /api/v1/notifications/**
             - id: notification-websocket-route
               uri: lb:ws://NOTIFICATION-SERVICE
               predicates:
                 - Path=/ws, /ws/**
+
             - id: map-read-rate-limited
               order: -10
               uri: lb://DISPATCH-SERVICE
@@ -71,6 +49,20 @@ spring:
                     key-resolver: "#{@clientKeyResolver}"
                     redis-rate-limiter.replenishRate: 5
                     redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+
+            - id: weather-rate-limited
+              order: -10
+              uri: lb://INTEGRATION-SERVICE
+              predicates:
+                - Path=/api/v1/weather, /api/v1/weather/**
+                - Method=GET
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    key-resolver: "#{@clientKeyResolver}"
+                    redis-rate-limiter.replenishRate: 2
+                    redis-rate-limiter.burstCapacity: 5
                     redis-rate-limiter.requestedTokens: 1
 
             # cấu hình rate limit
@@ -128,7 +120,6 @@ spring:
                     redis-rate-limiter.burstCapacity: 10
                     redis-rate-limiter.requestedTokens: 1
 
-
             - id: dispatch-service
               uri: lb://DISPATCH-SERVICE
               predicates:
@@ -144,7 +135,7 @@ spring:
             - id: integration-service
               uri: lb://INTEGRATION-SERVICE
               predicates:
-                - Path=/api/v1/ai/**, /api/v1/news/**, /api/v1/sms/**, /api/v1/social-feeds/**
+                - Path=/api/v1/ai/**, /api/v1/news/**, /api/v1/sms/**, /api/v1/social-feeds/**, /api/v1/weather, /api/v1/weather/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -156,7 +147,7 @@ spring:
             - id: notification-service
               uri: lb://NOTIFICATION-SERVICE
               predicates:
-                - Path=/api/v1/notifications/**
+                - Path=/api/v1/notifications, /api/v1/notifications/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -168,7 +159,7 @@ spring:
             - id: resource-management-service
               uri: lb://RESOURCE-MANAGEMENT-SERVICE
               predicates:
-                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/teams/**, /api/v1/campaign-warehouse-inventories/**, /api/v1/items/**, /api/v1/team-mobile-inventories/**
+                - Path=/api/v1/resources/**, /api/v1/campaigns/**, /api/v1/campaign-teams/**, /api/v1/campaign-members/**, /api/v1/teams/**, /api/v1/items, /api/v1/items/**, /api/v1/inventories, /api/v1/inventories/**, /api/v1/campaign-warehouse-inventories/**, /api/v1/team-mobile-inventories/**
               filters:
                 - name: RequestRateLimiter
                   args:
@@ -177,12 +168,6 @@ spring:
                     redis-rate-limiter.burstCapacity: 20
                     redis-rate-limiter.requestedTokens: 1
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
 rsa:
   public-key-path: ${RSA_PUBLIC_PATH}
 

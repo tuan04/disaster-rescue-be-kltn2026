@@ -1,8 +1,12 @@
-﻿# Eureka Server là nơi để các service đăng ký và tìm thấy nhau bằng tên thay vì bằng port
+# Eureka Server là nơi để các service đăng ký và tìm thấy nhau bằng tên thay vì bằng port
 # Giúp cho việc giao tiếp giữa các service dễ dàng hơn
 
 server:
   port: 8761 # Port mặc định của Eureka Server
+
+spring:
+  application:
+    name: eureka-server
 
 eureka:
   client:
@@ -12,5 +16,11 @@ eureka:
     fetch-registry: false
   server:
     wait-time-in-ms-when-sync-empty: 0
-    enable-self-preservation: false
+    enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
     eviction-interval-timer-in-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

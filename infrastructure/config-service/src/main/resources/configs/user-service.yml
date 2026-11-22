@@ -5,21 +5,19 @@ spring:
   grpc:
     server:
       port: 9091
-
     client:
       channel:
         integration-service:
-          target: static://${INTEGRATION_GRPC_HOST:localhost}:9095
+          target: static://${INTEGRATION_GRPC_HOST:localhost}:${INTEGRATION_GRPC_PORT:9095}
           negotiation-type: plaintext
-    servlet:
-      multipart:
-        max-file-size: 10MB
-        max-request-size: 15MB
-
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${USER_DB_NAME:user_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:123456}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${USER_DB_NAME:user_db}?currentSchema=${USER_DB_SCHEMA:${DB_SCHEMA:public}},public
+    username: ${USER_DB_USER:${DB_USER:postgres}}
+    password: ${USER_DB_PASSWORD:${DB_PASSWORD:123456}}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -34,12 +32,10 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:123456}
 
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+app:
+  security:
+    cookie-secure: ${COOKIE_SECURE:false}
+
 rsa:
   private-key-path: ${RSA_PRIVATE_PATH}
   public-key-path: ${RSA_PUBLIC_PATH}
@@ -49,5 +45,5 @@ aws:
     bucket-name: ${BUCKET_NAME}
     region: ${REGION}
   credentials:
-    access-key: ${AWS_ACCESS_KEY_ID}
-    secret-key: ${AWS_SECRET_ACCESS_KEY}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}

@@ -1,0 +1,9 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              "[/**]":
+                allowedOriginPatterns: []

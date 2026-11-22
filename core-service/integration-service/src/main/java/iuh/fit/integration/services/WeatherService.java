@@ -184,11 +184,15 @@ public class WeatherService {
         days.sort(Comparator.comparing(WeatherDailyResponse::date));
 
         Long epochSeconds = longOrNull(currentNode.path("last_updated_epoch"));
+        Instant updatedAt = epochSeconds != null ? Instant.ofEpochSecond(epochSeconds) : null;
+        Integer currentRainChance = integerOrNull(currentNode.path("chance_of_rain"));
         WeatherCurrentResponse current = new WeatherCurrentResponse(
                 doubleOrNull(currentNode.path("temp_c")),
+                doubleOrNull(currentNode.path("feelslike_c")),
                 integerOrNull(currentNode.path("humidity")),
+                currentRainChance,
                 mapCondition(currentNode.path("condition")),
-                epochSeconds != null ? Instant.ofEpochSecond(epochSeconds) : null
+                updatedAt
         );
 
         return new WeatherResponse(

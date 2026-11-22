@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record TeamSummaryResponse(
         UUID id,
+        String code,
         String teamName,
         String leaderName,
         String leaderPhone,
@@ -18,6 +19,7 @@ public record TeamSummaryResponse(
     public static TeamSummaryResponse fromEntity(CampaignTeam team) {
         return new TeamSummaryResponse(
                 team.getId(),
+                team.getCode(),
                 team.getTeamName(),
                 team.getLeaderName(),
                 team.getLeaderPhone(),

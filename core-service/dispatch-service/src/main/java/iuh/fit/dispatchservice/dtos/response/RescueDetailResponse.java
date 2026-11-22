@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public record RescueDetailResponse(
         UUID id,
+        String code,
         String reporterPhone,
         EmergencyLevel emergencyLevel,
         String content,

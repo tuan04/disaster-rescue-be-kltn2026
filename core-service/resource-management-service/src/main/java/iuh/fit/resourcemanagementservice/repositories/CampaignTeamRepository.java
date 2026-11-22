@@ -20,6 +20,9 @@ import java.util.UUID;
 
 @Repository
 public interface CampaignTeamRepository extends JpaRepository<CampaignTeam, UUID>, JpaSpecificationExecutor<CampaignTeam> {
+    @Query(value = "SELECT nextval('team_code_seq')", nativeQuery = true)
+    long nextCodeSequence();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT team FROM CampaignTeam team WHERE team.id = :id")
     Optional<CampaignTeam> findByIdForUpdate(UUID id);

@@ -9,6 +9,7 @@ import java.util.UUID;
 @Builder
 public record LocationPageResponse(
         UUID id,
+        String code,
         UUID userId,
         String name,
         GeoJsonPolygon boundary,

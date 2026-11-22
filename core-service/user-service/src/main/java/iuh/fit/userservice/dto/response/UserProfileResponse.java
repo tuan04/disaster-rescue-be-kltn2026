@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UserProfileResponse {
     private UUID id;
+    private String code;
     private String fullName;
     private String phone;
     private SexEnum sex;
@@ -29,6 +30,7 @@ public class UserProfileResponse {
         }
         return UserProfileResponse.builder()
                 .id(user.getId())
+                .code(user.getCode())
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
                 .sex(user.getSex())

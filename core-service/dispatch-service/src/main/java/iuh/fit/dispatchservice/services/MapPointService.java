@@ -154,7 +154,7 @@ public class MapPointService {
                 .managerPhone(request.getManagerPhone())
                 .isActive(true)
                 .build();
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        Warehouse savedWarehouse = warehouseRepository.saveAndFlush(warehouse);
 
 
         publishMapPointCreated(
@@ -189,7 +189,7 @@ public class MapPointService {
             warehouse.setIsActive(request.getIsActive());
         }
 
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+        Warehouse savedWarehouse = warehouseRepository.saveAndFlush(warehouse);
         return mapPointMapper.toResDTO(savedWarehouse);
     }
 
@@ -224,7 +224,7 @@ public class MapPointService {
                 .contactPhone(request.getContactPhone())
                 .isActive(true)
                 .build();
-        SafePoint savedSafePoint = safePointRepository.save(safePoint);
+        SafePoint savedSafePoint = safePointRepository.saveAndFlush(safePoint);
 
 
         publishMapPointCreated(
@@ -318,7 +318,7 @@ public class MapPointService {
                 .imageUrls(allImageUrls)
                 .status(HazardStatus.ACTIVE)
                 .build();
-        HazardReport savedHazardReport = hazardReportRepository.save(hazardReport);
+        HazardReport savedHazardReport = hazardReportRepository.saveAndFlush(hazardReport);
 
 
         publishMapPointCreated(

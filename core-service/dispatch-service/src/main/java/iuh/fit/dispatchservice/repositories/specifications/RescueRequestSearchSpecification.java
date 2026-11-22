@@ -78,9 +78,10 @@ public class RescueRequestSearchSpecification {
                             '!'
                     );
 
-                    predicates.add(
-                            cb.or(addressMatches, phoneMatches)
+                    Predicate codeMatches = cb.like(
+                            cb.lower(root.<String>get("code")), pattern, '!'
                     );
+                    predicates.add(cb.or(addressMatches, phoneMatches, codeMatches));
                 }
             }
             return cb.and(predicates.toArray(new Predicate[0]));

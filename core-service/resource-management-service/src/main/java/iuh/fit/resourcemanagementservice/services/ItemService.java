@@ -7,6 +7,7 @@ import iuh.fit.resourcemanagementservice.dtos.request.CreateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateItemRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.ItemResponse;
 import iuh.fit.resourcemanagementservice.entity.Item;
+import iuh.fit.resourcemanagementservice.utils.ItemCode;
 import iuh.fit.resourcemanagementservice.repositories.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -68,6 +69,7 @@ public class ItemService {
             itemToSave = existing;
         } else {
             itemToSave = Item.builder()
+                    .code(ItemCode.generate(itemName, itemRepository.nextCodeSequence()))
                     .name(itemName)
                     .unit(request.unit())
                     .imageUrl(imageUrl)
@@ -142,7 +144,7 @@ public class ItemService {
     @Transactional(readOnly = true)
     public PageResponse<ItemResponse> getItems(String keyword, Pageable pageable) {
         Page<Item> page = (keyword != null && !keyword.isBlank())
-                ? itemRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword.trim(), pageable)
+                ? itemRepository.searchByNameOrCode(keyword.trim(), pageable)
                 : itemRepository.findByIsDeletedFalse(pageable);
         return PageResponse.from(page.map(ItemResponse::fromEntity));
     }

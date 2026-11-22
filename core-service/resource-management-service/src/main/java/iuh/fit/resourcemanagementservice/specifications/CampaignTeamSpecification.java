@@ -39,6 +39,7 @@ public final class CampaignTeamSpecification {
             }
             String pattern = "%" + keyword.trim().toLowerCase() + "%";
             return cb.or(
+                    cb.like(cb.lower(root.get("code")), pattern),
                     cb.like(cb.lower(root.get("teamName")), pattern),
                     cb.like(cb.lower(root.get("leaderName")), pattern),
                     cb.like(root.get("leaderPhone"), "%" + keyword.trim() + "%"),

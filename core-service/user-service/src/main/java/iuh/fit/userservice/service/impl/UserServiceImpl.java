@@ -123,7 +123,7 @@ public class UserServiceImpl implements UserService {
     public List<UserIDAndNameResponse> getUserNames() {
         return userRepository.findByVolunteerProfile_VerifiedStatusAndVolunteerProfile_CurrentRoleInTeam(VerifiedStatusEnum.VERIFIED, RoleInTeamEnum.COORDINATOR)
                 .stream()
-                .map(user -> new UserIDAndNameResponse(user.getId(), user.getFullName()))
+                .map(user -> new UserIDAndNameResponse(user.getId(), user.getCode(), user.getFullName()))
                 .toList();
     }
 

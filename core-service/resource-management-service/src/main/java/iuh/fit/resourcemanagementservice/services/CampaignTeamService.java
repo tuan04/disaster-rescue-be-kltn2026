@@ -37,6 +37,8 @@ import iuh.fit.resourcemanagementservice.mappers.CampaignTeamMapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import iuh.fit.resourcemanagementservice.utils.TeamCode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -96,7 +98,13 @@ public class CampaignTeamService {
             }
 
             return transactionTemplate.execute(status -> {
+                LocalDateTime createdAt = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+                String code = TeamCode.generate(teamName, createdAt.toLocalDate(),
+                        campaignTeamRepository.nextCodeSequence());
                 CampaignTeam team = CampaignTeam.builder()
+                        .code(code)
+                        .createdAt(createdAt)
+                        .requestedAt(createdAt)
                         .campaign(campaign)
                         .teamName(teamName == null ? null : teamName.trim())
                         .vehicles(vehicles == null ? new ArrayList<>() : new ArrayList<>(vehicles))

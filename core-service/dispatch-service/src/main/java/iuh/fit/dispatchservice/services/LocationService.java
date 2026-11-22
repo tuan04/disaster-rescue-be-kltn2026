@@ -11,6 +11,9 @@ import iuh.fit.dispatchservice.dtos.response.LocationPageResponse;
 import iuh.fit.dispatchservice.dtos.response.LocationResponse;
 import iuh.fit.dispatchservice.entity.Location;
 import iuh.fit.dispatchservice.enums.LocationStatus;
+import iuh.fit.dispatchservice.utils.LocationCode;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import iuh.fit.dispatchservice.repositories.LocationRepository;
 import iuh.fit.dispatchservice.repositories.specifications.LocationSpecification;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +46,12 @@ public class LocationService {
             boundary = request.getBoundary().toPolygon(geometryFactory);
         }
 
+        var createdAt = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        String code = LocationCode.generate(
+                request.getName(), createdAt.toLocalDate(), locationRepository.nextCodeSequence());
         Location location = Location.builder()
+                .code(code)
+                .createdAt(createdAt)
                 .name(request.getName().trim())
                 .userId(request.getUserId())
                 .boundary(boundary)
@@ -101,6 +109,7 @@ public class LocationService {
 
         return LocationPageResponse.builder()
                 .id(location.getId())
+                .code(location.getCode())
                 .userId(location.getUserId())
                 .name(location.getName())
                 .boundary(GeoJsonPolygon.fromPolygon(location.getBoundary()))
@@ -117,7 +126,7 @@ public class LocationService {
 
     public List<LocationResponse> getAllLocations() {
        List<Location> locations =  locationRepository.findByIsActiveTrue().orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN ,"Locations not found"));
-       return locations.stream().map(location -> new LocationResponse(location.getId(), location.getName())).toList();
+       return locations.stream().map(location -> new LocationResponse(location.getId(), location.getCode(), location.getName())).toList();
     }
 
 
@@ -156,6 +165,7 @@ public class LocationService {
 
                     return LocationPageResponse.builder()
                             .id(location.getId())
+                            .code(location.getCode())
                             .userId(location.getUserId())
                             .name(location.getName())
                             .boundary(GeoJsonPolygon.fromPolygon(location.getBoundary()))

@@ -21,6 +21,11 @@ public class RescueRequest {
     @Id
     private UUID id;
 
+    @org.hibernate.annotations.Generated(event = org.hibernate.generator.EventType.INSERT)
+    @org.hibernate.annotations.ColumnDefault("generate_sos_code()")
+    @Column(name = "code", nullable = false, unique = true, length = 32, updatable = false)
+    private String code;
+
     // Chia sẻ chung ID với bảng map_points
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
@@ -64,7 +69,7 @@ public class RescueRequest {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     @PreUpdate

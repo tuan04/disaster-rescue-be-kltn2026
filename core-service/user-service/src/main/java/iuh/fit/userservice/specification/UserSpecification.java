@@ -29,6 +29,7 @@ public final class UserSpecification {
                 String pattern = containsPattern(request.getKeyword());
 
                 predicates.add(cb.or(
+                        cb.like(cb.lower(root.<String>get("code")), pattern, '\\'),
                         cb.like(
                                 cb.lower(root.<String>get("phone")),
                                 pattern,

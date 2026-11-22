@@ -21,6 +21,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @org.hibernate.annotations.Generated(event = org.hibernate.generator.EventType.INSERT)
+    @org.hibernate.annotations.ColumnDefault("generate_user_code()")
+    @Column(name = "code", nullable = false, unique = true, length = 32, updatable = false)
+    private String code;
+
     @Column(length = 20, nullable = false, unique = true)
     private String phone;
 
@@ -61,7 +66,7 @@ public class User {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     @PreUpdate

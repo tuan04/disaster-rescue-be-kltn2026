@@ -20,6 +20,9 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "code", nullable = false, unique = true, length = 48, updatable = false)
+    private String code;
+
     @Column(name = "user_id")
     private UUID userId;
 
@@ -54,7 +57,7 @@ public class Location {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     @PreUpdate

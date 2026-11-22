@@ -80,12 +80,13 @@ public class SecurityConfig {
                                 DispatcherType.ERROR
                         ).permitAll()
 
-                        // Người chưa đăng nhập vẫn được đọc tin tức.
+                        // Người chưa đăng nhập vẫn được đọc tin tức và dự báo thời tiết.
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/v1/news",
                                 "/api/v1/news/latest",
-                                "/api/v1/news/{id}"
+                                "/api/v1/news/{id}",
+                                "/api/v1/weather"
                         ).permitAll()
 
                         // n8n gửi tin tức bằng khóa hệ thống.

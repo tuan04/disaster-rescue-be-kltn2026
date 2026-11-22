@@ -8,10 +8,19 @@ import java.util.List;
 public record GoongGeocodeResponse(List<Result> results) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Compound(
+            String commune,
+            String district,
+            String province) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record Result(
             String name,
             String formatted_address,
             String address,
-            String deprecated_description) {
+            String deprecated_description,
+            Compound compound,
+            Compound deprecated_compound) {
     }
 }

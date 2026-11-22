@@ -367,7 +367,9 @@ async function collectPosts() {
         const groupIds = loadGroups();
         console.log(`\nBắt đầu crawl ${groupIds.length} groups`);
 
-        browser = await chromium.launch({ headless: false });
+        browser = await chromium.launch({
+            headless: process.env.COLLECTOR_HEADLESS === 'true',
+        });
         const context = await browser.newContext({ storageState: AUTH_STATE_PATH });
         const allPosts = [];
 

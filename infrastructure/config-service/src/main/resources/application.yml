@@ -5,7 +5,12 @@ spring:
   application:
     name: config-service
   profiles:
-    active: native
+    default: native
+    group:
+      dev:
+        - native
+      prod:
+        - native
   cloud:
     config:
       server:
@@ -17,3 +22,11 @@ eureka:
     service-url:
       # Đăng ký chính Config Server với Eureka
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

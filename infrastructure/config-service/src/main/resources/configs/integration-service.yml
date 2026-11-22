@@ -2,8 +2,6 @@ server:
   port: 8085
 
 spring:
-
-
   grpc:
     server:
       port: 9095
@@ -13,6 +11,11 @@ spring:
   data:
     mongodb:
       auto-index-creation: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      timeout: 1s
   ai:
     google:
       genai:
@@ -33,28 +36,23 @@ spring:
     #        spring.json.type.mapping: >
     #          sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
     consumer:
-      group-id: dispatch-group
+      group-id: integration-group
       auto-offset-reset: earliest
       key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
-         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
-         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-#         spring.json.use.type.headers: true
-         spring.json.trusted.packages: "iuh.fit.common.kafka.dto"
-#         spring.json.type.mapping: >
-#           sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        #         spring.json.use.type.headers: true
+        spring.json.trusted.packages: "iuh.fit.common.kafka.dto"
+        #         spring.json.type.mapping: >
+        #           sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
 
 weather:
   api:
     key: ${WEATHER_API_KEY}
-    
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+    base-url: ${WEATHER_API_BASE_URL:https://api.weatherapi.com/v1}
+    forecast-days: ${WEATHER_FORECAST_DAYS:3}
 
 goong:
   api-key: ${GOONG_API_KEY:}

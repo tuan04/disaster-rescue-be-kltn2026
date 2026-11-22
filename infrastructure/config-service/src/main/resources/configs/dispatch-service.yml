@@ -6,18 +6,17 @@ spring:
     client:
       channel:
         resource-management-service:
-          target: static://localhost:9092
+          target: static://${RESOURCE_GRPC_HOST:localhost}:${RESOURCE_GRPC_PORT:9092}
         user-service:
-          target: static://localhost:9091
-
+          target: static://${USER_GRPC_HOST:localhost}:${USER_GRPC_PORT:9091}
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DISPATCH_DB_NAME:dispatch_db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:123456}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DISPATCH_DB_NAME:dispatch_db}?currentSchema=${DISPATCH_DB_SCHEMA:${DB_SCHEMA:public}},public
+    username: ${DISPATCH_DB_USER:${DB_USER:postgres}}
+    password: ${DISPATCH_DB_PASSWORD:${DB_PASSWORD:123456}}
     driver-class-name: org.postgresql.Driver
   sql:
     init:
-      mode: always
+      mode: ${SQL_INIT_MODE:always}
   jpa:
     defer-datasource-initialization: false
     hibernate:
@@ -27,7 +26,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:123456}
   kafka:
     bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9094}
     producer:
@@ -45,28 +44,22 @@ spring:
       properties:
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-#         spring.json.use.type.headers: true
+        #         spring.json.use.type.headers: true
         spring.json.trusted.packages: "iuh.fit.*"
-#         spring.json.type.mapping: >
-#           sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
+        #         spring.json.type.mapping: >
+        #           sos_event:iuh.fit.dispatchservice.dtos.response.RescueDetailResponse
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 20MB
+
 aws:
   s3:
     bucket-name: ${BUCKET_NAME}
     region: ${REGION}
   credentials:
-    access-key: ${AWS_ACCESS_KEY_ID}
-    secret-key: ${AWS_SECRET_ACCESS_KEY}
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-  instance:
-    prefer-ip-address: true
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
 
 goong:
   api-key: ${GOONG_API_KEY:}
@@ -74,4 +67,3 @@ goong:
 
 rsa:
   public-key-path: ${RSA_PUBLIC_PATH}
-

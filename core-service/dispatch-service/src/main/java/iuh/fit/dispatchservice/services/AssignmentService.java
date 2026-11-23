@@ -277,11 +277,13 @@ public class AssignmentService {
                 assignment.getCampaignTeamId(),
                 java.time.Instant.now());
         rescueEventProducer.publishRescueCompletedEvent(event);
-        double totalDistanceMeters = teamLocationTrackService.finishTracking(
+        if (assignment.getDistanceMeters() == null) {
+            assignment.setDistanceMeters(0.0);
+        }
+        teamLocationTrackService.finishTracking(
                 assignment.getCampaignTeamId(),
                 assignment.getId()
         );
-        assignment.setDistanceMeters(totalDistanceMeters);
     }
 
     @Transactional
@@ -309,11 +311,13 @@ public class AssignmentService {
                 reason.trim(),
                 java.time.Instant.now());
         rescueEventProducer.publishRescueCanceledEvent(event);
-        double totalDistanceMeters = teamLocationTrackService.finishTracking(
+        if (assignment.getDistanceMeters() == null) {
+            assignment.setDistanceMeters(0.0);
+        }
+        teamLocationTrackService.finishTracking(
                 assignment.getCampaignTeamId(),
                 assignment.getId()
         );
-        assignment.setDistanceMeters(totalDistanceMeters);
     }
 
     public AssignmentResponse getActiveMissionByTeam(UUID teamId) {

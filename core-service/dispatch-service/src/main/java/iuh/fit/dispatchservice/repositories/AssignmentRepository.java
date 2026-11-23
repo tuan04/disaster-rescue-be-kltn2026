@@ -9,8 +9,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -131,4 +133,9 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
             WHERE a.campaign_team_id = :teamId
             """, nativeQuery = true)
     TeamRescueStatisticsProjection aggregateTeamStatistics(@Param("teamId") UUID teamId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Assignment a SET a.distanceMeters = :distanceMeters WHERE a.id = :assignmentId")
+    void updateDistanceMeters(@Param("assignmentId") UUID assignmentId, @Param("distanceMeters") Double distanceMeters);
 }

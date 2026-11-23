@@ -2,6 +2,7 @@ package iuh.fit.dispatchservice.services;
 
 import iuh.fit.common.kafka.dto.TeamLocationUpdatedEvent;
 import iuh.fit.dispatchservice.entity.TeamLocationLog;
+import iuh.fit.dispatchservice.repositories.AssignmentRepository;
 import iuh.fit.dispatchservice.repositories.TeamLocationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -42,7 +45,7 @@ public class TeamLocationTrackService {
 
     private static final double MIN_DISTANCE_METERS = 20.0;
     private static final double MAX_SPEED_MPS = 45.0; // ~162 km/h
-    private static final int BATCH_FLUSH_THRESHOLD = 20;
+    private static final int BATCH_FLUSH_THRESHOLD = 30;
     private static final double EARTH_RADIUS_METERS = 6_371_000.0;
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
@@ -67,12 +70,14 @@ public class TeamLocationTrackService {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final TeamLocationLogRepository teamLocationLogRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final ThreadPoolTaskScheduler dispatchSocialTaskScheduler;
 
     public void startTracking(UUID campaignTeamId, UUID assignmentId) {
         if (campaignTeamId == null || assignmentId == null) {
             return;
         }
-        runAfterCommit(() -> {
+        runAsyncAfterCommit(() -> {
             try {
                 String activeKey = ACTIVE_ASSIGNMENT_KEY_PREFIX + campaignTeamId;
                 stringRedisTemplate.opsForValue().set(activeKey, assignmentId.toString(), TRACK_TTL);
@@ -163,22 +168,34 @@ public class TeamLocationTrackService {
     }
 
     /**
-     * Đọc phần điểm còn lại trong Redis lưu thành đoạn LineString cuối trong cùng transaction DB,
-     * tính tổng quãng đường của ca cứu hộ, và chỉ xóa các key Redis sau khi DB commit thành công.
-     * Giữ Redis lock xuyên suốt transaction để chặn tuyệt đối race condition với flushIntermediate().
+     * Chạy bất đồng bộ ngay sau khi transaction DB chính commit để không làm chậm HTTP response:
+     * xin Redis lock, lưu đoạn LineString cuối vào DB, tính và cập nhật assignments.distance_meters,
+     * rồi dọn sạch các key tracking trong Redis.
      */
-    public double finishTracking(UUID campaignTeamId, UUID assignmentId) {
+    public void finishTracking(UUID campaignTeamId, UUID assignmentId) {
         if (campaignTeamId == null || assignmentId == null) {
-            return 0.0;
+            return;
         }
 
-        String bufKey = bufferKey(campaignTeamId, assignmentId);
-        String activeKey = ACTIVE_ASSIGNMENT_KEY_PREFIX + campaignTeamId;
-        String lockKey = FLUSH_LOCK_KEY_PREFIX + assignmentId;
-        String lockToken = acquireLockWithRetry(lockKey);
+        runAsyncAfterCommit(() -> {
+            String bufKey = bufferKey(campaignTeamId, assignmentId);
+            String activeKey = ACTIVE_ASSIGNMENT_KEY_PREFIX + campaignTeamId;
+            String lockKey = FLUSH_LOCK_KEY_PREFIX + assignmentId;
+            String lockToken = acquireLockWithRetry(lockKey);
 
-        Runnable cleanupAction = () -> {
             try {
+                if (lockToken != null) {
+                    List<String> remainingPoints = stringRedisTemplate.opsForList().range(bufKey, 0, -1);
+                    saveLineStringSegment(campaignTeamId, assignmentId, remainingPoints);
+                } else {
+                    log.warn("Không thể giữ lock flush cuối cho team={}, assignment={}; bỏ qua đọc buffer để tránh ghi trùng.",
+                            campaignTeamId, assignmentId);
+                }
+
+                Double totalMeters = teamLocationLogRepository.sumDistanceMetersByAssignmentId(assignmentId);
+                double roundedMeters = totalMeters != null ? Math.round(totalMeters * 10.0) / 10.0 : 0.0;
+                assignmentRepository.updateDistanceMeters(assignmentId, roundedMeters);
+
                 stringRedisTemplate.execute(
                         CLEANUP_TRACK_SCRIPT,
                         List.of(bufKey, activeKey, ACTIVE_TEAMS_SET_KEY),
@@ -186,52 +203,14 @@ public class TeamLocationTrackService {
                         campaignTeamId.toString()
                 );
             } catch (Exception ex) {
-                log.warn("Không thể dọn key Redis tracking sau commit cho team={}, assignment={}: {}",
+                log.warn("Lỗi hoàn tất tracking bất đồng bộ cho team={}, assignment={}: {}",
                         campaignTeamId, assignmentId, ex.getMessage());
-            }
-        };
-
-        Runnable releaseLockAction = () -> {
-            if (lockToken != null) {
-                releaseLock(lockKey, lockToken);
-            }
-        };
-
-        boolean txActive = TransactionSynchronizationManager.isSynchronizationActive();
-        if (txActive) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    cleanupAction.run();
+            } finally {
+                if (lockToken != null) {
+                    releaseLock(lockKey, lockToken);
                 }
-
-                @Override
-                public void afterCompletion(int status) {
-                    releaseLockAction.run();
-                }
-            });
-        }
-
-        try {
-            if (lockToken != null) {
-                List<String> remainingPoints = stringRedisTemplate.opsForList().range(bufKey, 0, -1);
-                saveLineStringSegment(campaignTeamId, assignmentId, remainingPoints);
-            } else {
-                log.warn("Không thể giữ lock flush cuối cho team={}, assignment={}; bỏ qua đọc buffer để tránh ghi trùng.",
-                        campaignTeamId, assignmentId);
             }
-        } catch (Exception ex) {
-            log.warn("Lỗi đọc/lưu đoạn hành trình cuối cho team={}, assignment={}: {}",
-                    campaignTeamId, assignmentId, ex.getMessage());
-        } finally {
-            if (!txActive) {
-                cleanupAction.run();
-                releaseLockAction.run();
-            }
-        }
-
-        Double totalMeters = teamLocationLogRepository.sumDistanceMetersByAssignmentId(assignmentId);
-        return totalMeters != null ? Math.round(totalMeters * 10.0) / 10.0 : 0.0;
+        });
     }
 
     @Scheduled(fixedDelay = 300_000)
@@ -261,16 +240,16 @@ public class TeamLocationTrackService {
         }
     }
 
-    private void runAfterCommit(Runnable action) {
+    private void runAsyncAfterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    action.run();
+                    CompletableFuture.runAsync(action, dispatchSocialTaskScheduler);
                 }
             });
         } else {
-            action.run();
+            CompletableFuture.runAsync(action, dispatchSocialTaskScheduler);
         }
     }
 

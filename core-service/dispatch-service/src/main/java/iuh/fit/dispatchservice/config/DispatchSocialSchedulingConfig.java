@@ -14,7 +14,7 @@ public class DispatchSocialSchedulingConfig {
 
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
 
-        scheduler.setPoolSize(1);
+        scheduler.setPoolSize(3);
 
         scheduler.setThreadNamePrefix("dispatch-social-outbox-");
 

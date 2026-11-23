@@ -188,6 +188,9 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/v1/assignments/teams/{teamId}/pending",
                                 "/api/v1/assignments/teams/{teamId}/active",
+                                "/api/v1/assignments/teams/{teamId}/history",
+                                "/api/v1/assignments/teams/{teamId}/statistics",
+                                "/api/v1/assignments/{assignmentId}/track",
                                 "/api/v1/assignments/{requestId}"
                         ).hasAnyRole(
                                 "ADMIN",

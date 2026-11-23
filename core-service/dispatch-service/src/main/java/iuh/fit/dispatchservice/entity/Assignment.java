@@ -10,7 +10,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "assignments")
+@Table(
+        name = "assignments",
+        indexes = {
+                @Index(name = "idx_assignments_campaign_team_id", columnList = "campaign_team_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,6 +53,9 @@ public class Assignment {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "distance_meters")
+    private Double distanceMeters;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

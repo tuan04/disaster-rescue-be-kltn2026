@@ -7,14 +7,20 @@ import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
 import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
+import iuh.fit.dispatchservice.dtos.projection.TeamRescueStatisticsProjection;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.AssignmentTrackResponse;
 import iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.TeamAssignmentHistoryResponse;
+import iuh.fit.dispatchservice.dtos.response.TeamRescueStatisticsResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
 import iuh.fit.dispatchservice.entity.RescueRequest;
+import iuh.fit.dispatchservice.entity.TeamLocationLog;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
 import iuh.fit.dispatchservice.enums.RequestStatus;
 import iuh.fit.dispatchservice.repositories.AssignmentRepository;
+import iuh.fit.dispatchservice.repositories.TeamLocationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +39,10 @@ import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
 import iuh.fit.dispatchservice.entity.MapPoint;
 import iuh.fit.dispatchservice.enums.PointType;
 import iuh.fit.dispatchservice.kafka.producer.RescueEventProducer;
+import iuh.fit.dispatchservice.utils.AssignmentMapper;
 import iuh.fit.dispatchservice.utils.MapPointMapper;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 
 @Slf4j
@@ -41,6 +51,9 @@ import org.locationtech.jts.geom.Point;
 public class AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
+    private final TeamLocationLogRepository teamLocationLogRepository;
+    private final TeamLocationTrackService teamLocationTrackService;
+    private final AssignmentMapper assignmentMapper;
     private final RescueService rescueService;
     private final ResourceTeamGrpcClient resourceTeamGrpcClient;
     private final RescueEventProducer rescueEventProducer;
@@ -69,6 +82,7 @@ public class AssignmentService {
 
         if (initialStatus == AssignmentStatus.ACCEPTED) {
             rescueRequest.setStatus(RequestStatus.ACCEPTED);
+            assignment.setRespondedAt(LocalDateTime.now());
         }
 
         return assignmentRepository.save(assignment);
@@ -99,16 +113,7 @@ public class AssignmentService {
     @Transactional
     public Assignment acceptRescueByLeader(UUID requestId, UUID leaderId, String notes) {
         Assignment assignment = createAssignment(requestId, leaderId, notes, AssignmentStatus.ACCEPTED);
-
-        RescueAcceptedEvent event = new RescueAcceptedEvent(
-                assignment.getId(),
-                assignment.getRescueRequest().getId(),
-                assignment.getCampaignTeamId(),
-                assignment.getAssignedTeamName(),
-                assignment.getLeaderPhone(),
-                Instant.now());
-        rescueEventProducer.publishRescueAcceptedEvent(event);
-
+        onAssignmentAccepted(assignment);
         return assignment;
     }
 
@@ -149,7 +154,21 @@ public class AssignmentService {
                     : note.trim());
         }
 
-        return assignmentRepository.save(assignment);
+        Assignment saved = assignmentRepository.save(assignment);
+        onAssignmentAccepted(saved);
+        return saved;
+    }
+
+    private void onAssignmentAccepted(Assignment assignment) {
+        RescueAcceptedEvent event = new RescueAcceptedEvent(
+                assignment.getId(),
+                assignment.getRescueRequest().getId(),
+                assignment.getCampaignTeamId(),
+                assignment.getAssignedTeamName(),
+                assignment.getLeaderPhone(),
+                Instant.now());
+        rescueEventProducer.publishRescueAcceptedEvent(event);
+        teamLocationTrackService.startTracking(assignment.getCampaignTeamId(), assignment.getId());
     }
 
     @Transactional
@@ -258,6 +277,11 @@ public class AssignmentService {
                 assignment.getCampaignTeamId(),
                 java.time.Instant.now());
         rescueEventProducer.publishRescueCompletedEvent(event);
+        double totalDistanceMeters = teamLocationTrackService.finishTracking(
+                assignment.getCampaignTeamId(),
+                assignment.getId()
+        );
+        assignment.setDistanceMeters(totalDistanceMeters);
     }
 
     @Transactional
@@ -285,6 +309,11 @@ public class AssignmentService {
                 reason.trim(),
                 java.time.Instant.now());
         rescueEventProducer.publishRescueCanceledEvent(event);
+        double totalDistanceMeters = teamLocationTrackService.finishTracking(
+                assignment.getCampaignTeamId(),
+                assignment.getId()
+        );
+        assignment.setDistanceMeters(totalDistanceMeters);
     }
 
     public AssignmentResponse getActiveMissionByTeam(UUID teamId) {
@@ -359,5 +388,128 @@ public class AssignmentService {
                 );
 
         return PageResponse.from(result);
+    }
+
+    @Transactional(readOnly = true)
+    public TeamRescueStatisticsResponse getTeamStatistics(UUID teamId) {
+        if (teamId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "teamId không được để trống");
+        }
+
+        TeamRescueStatisticsProjection stats = assignmentRepository.aggregateTeamStatistics(teamId);
+        if (stats == null) {
+            return new TeamRescueStatisticsResponse(0L, 0L, 0L, 0.0, null);
+        }
+
+        long completedCount = stats.getTotalCompletedCases() != null ? stats.getTotalCompletedCases() : 0L;
+        long canceledCount = stats.getTotalCanceledCases() != null ? stats.getTotalCanceledCases() : 0L;
+        long rejectedCount = stats.getTotalRejectedCases() != null ? stats.getTotalRejectedCases() : 0L;
+        double totalDistanceMeters = stats.getTotalDistanceMeters() != null
+                ? Math.round(stats.getTotalDistanceMeters() * 10.0) / 10.0
+                : 0.0;
+        Double avgDurationMinutes = stats.getAverageDurationMinutes() != null
+                ? Math.round(stats.getAverageDurationMinutes() * 10.0) / 10.0
+                : null;
+
+        return new TeamRescueStatisticsResponse(
+                completedCount,
+                canceledCount,
+                rejectedCount,
+                totalDistanceMeters,
+                avgDurationMinutes
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<TeamAssignmentHistoryResponse> getTeamAssignmentHistory(
+            UUID teamId,
+            AssignmentStatus status,
+            int page,
+            int size
+    ) {
+        if (teamId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "teamId không được để trống");
+        }
+        if (page < 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "page phải lớn hơn hoặc bằng 0");
+        }
+        if (size < 1 || size > 100) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "size phải từ 1 đến 100");
+        }
+
+        List<AssignmentStatus> targetStatuses = status != null
+                ? List.of(status)
+                : List.of(AssignmentStatus.COMPLETED, AssignmentStatus.CANCELED, AssignmentStatus.REJECTED);
+
+        Page<Assignment> assignmentPage = assignmentRepository.findTeamHistoryByStatuses(
+                teamId,
+                targetStatuses,
+                PageRequest.of(page, size)
+        );
+
+        return PageResponse.from(assignmentPage.map(assignmentMapper::toHistoryResponse));
+    }
+
+    @Transactional(readOnly = true)
+    public AssignmentTrackResponse getAssignmentTrack(UUID assignmentId) {
+        if (assignmentId == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "assignmentId không được để trống");
+        }
+
+        Assignment assignment = assignmentRepository.findWithRequestAndMapPointById(assignmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy nhiệm vụ cứu hộ"));
+
+        RescueRequest rescue = assignment.getRescueRequest();
+        MapPoint mp = rescue != null ? rescue.getMapPoint() : null;
+        Point loc = mp != null ? mp.getLocation() : null;
+
+        List<TeamLocationLog> segments = teamLocationLogRepository.findByAssignmentIdOrderByStartedAtAscIdAsc(assignmentId);
+        List<List<Double>> coordinates = new ArrayList<>();
+        double fallbackDistanceMeters = 0.0;
+        LocalDateTime startedAt = null;
+        LocalDateTime endedAt = null;
+
+        for (TeamLocationLog segment : segments) {
+            if (segment.getDistanceMeters() != null) {
+                fallbackDistanceMeters += segment.getDistanceMeters();
+            }
+            if (segment.getStartedAt() != null && (startedAt == null || segment.getStartedAt().isBefore(startedAt))) {
+                startedAt = segment.getStartedAt();
+            }
+            if (segment.getEndedAt() != null && (endedAt == null || segment.getEndedAt().isAfter(endedAt))) {
+                endedAt = segment.getEndedAt();
+            }
+            LineString lineString = segment.getLineString();
+            if (lineString == null) {
+                continue;
+            }
+            for (Coordinate coord : lineString.getCoordinates()) {
+                double lng = coord.getX();
+                double lat = coord.getY();
+                if (!coordinates.isEmpty()) {
+                    List<Double> last = coordinates.get(coordinates.size() - 1);
+                    if (Double.compare(last.get(0), lng) == 0 && Double.compare(last.get(1), lat) == 0) {
+                        continue;
+                    }
+                }
+                coordinates.add(List.of(lng, lat));
+            }
+        }
+
+        double totalDistanceMeters = assignment.getDistanceMeters() != null
+                ? assignment.getDistanceMeters()
+                : fallbackDistanceMeters;
+
+        return new AssignmentTrackResponse(
+                assignment.getId(),
+                rescue != null ? rescue.getCode() : null,
+                loc != null ? mapPointMapper.toLatitude(loc) : null,
+                loc != null ? mapPointMapper.toLongitude(loc) : null,
+                mp != null ? mp.getAddress() : null,
+                Math.round(totalDistanceMeters * 10.0) / 10.0,
+                startedAt,
+                endedAt,
+                List.copyOf(coordinates)
+        );
     }
 }

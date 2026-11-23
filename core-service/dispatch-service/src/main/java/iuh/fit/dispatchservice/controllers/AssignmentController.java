@@ -5,9 +5,13 @@ import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.dtos.request.CancelAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.request.RescueAssignmentRequest;
 import iuh.fit.dispatchservice.dtos.response.AssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.AssignmentTrackResponse;
 import iuh.fit.dispatchservice.dtos.response.MapPointDetailResponse;
 import iuh.fit.dispatchservice.dtos.response.OngoingAssignmentResponse;
+import iuh.fit.dispatchservice.dtos.response.TeamAssignmentHistoryResponse;
+import iuh.fit.dispatchservice.dtos.response.TeamRescueStatisticsResponse;
 import iuh.fit.dispatchservice.entity.Assignment;
+import iuh.fit.dispatchservice.enums.AssignmentStatus;
 import iuh.fit.dispatchservice.services.AssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -134,5 +138,30 @@ public class AssignmentController {
                         "Lấy danh sách nhiệm vụ đang thực hiện thành công"
                 )
         );
+    }
+
+    @GetMapping("/teams/{teamId}/statistics")
+    public ResponseEntity<ApiResponse<TeamRescueStatisticsResponse>> getTeamStatistics(
+            @PathVariable UUID teamId) {
+        TeamRescueStatisticsResponse response = assignmentService.getTeamStatistics(teamId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thống kê cứu hộ của đội thành công"));
+    }
+
+    @GetMapping("/teams/{teamId}/history")
+    public ResponseEntity<ApiResponse<PageResponse<TeamAssignmentHistoryResponse>>> getTeamAssignmentHistory(
+            @PathVariable UUID teamId,
+            @RequestParam(required = false) AssignmentStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PageResponse<TeamAssignmentHistoryResponse> response =
+                assignmentService.getTeamAssignmentHistory(teamId, status, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy lịch sử cứu hộ của đội thành công"));
+    }
+
+    @GetMapping("/{assignmentId}/track")
+    public ResponseEntity<ApiResponse<AssignmentTrackResponse>> getAssignmentTrack(
+            @PathVariable UUID assignmentId) {
+        AssignmentTrackResponse response = assignmentService.getAssignmentTrack(assignmentId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy hành trình ca cứu hộ thành công"));
     }
 }

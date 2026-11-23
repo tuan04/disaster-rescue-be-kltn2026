@@ -28,6 +28,7 @@ public class RedisService {
 
     private static final String TEAM_LOCATION_KEY = "team:location:";
     private static final String TEAM_LOCATION_KEY_GIS = "team:location_gis:";
+    private static final Duration TEAM_LOCATION_TTL = Duration.ofMinutes(30);
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final StringRedisTemplate stringRedisTemplate;
@@ -60,7 +61,7 @@ public class RedisService {
 
         saveLocationGIS(location.latitude(), location.longitude(), campaignTeamId);
 
-        redisTemplate.opsForValue().set(key, location);
+        redisTemplate.opsForValue().set(key, location, TEAM_LOCATION_TTL);
     }
 
     private void saveLocationGIS(Double latitude, Double longitude, UUID campaignTeamId) {

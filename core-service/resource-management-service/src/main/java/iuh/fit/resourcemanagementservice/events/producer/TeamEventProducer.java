@@ -2,11 +2,14 @@ package iuh.fit.resourcemanagementservice.events.producer;
 
 import iuh.fit.common.kafka.dto.TeamMemberEvent;
 import iuh.fit.common.kafka.dto.TeamMemberEventType;
+import iuh.fit.common.kafka.dto.UserTeamMembershipSyncEvent;
 import iuh.fit.resourcemanagementservice.entity.CampaignTeam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -68,6 +71,38 @@ public class TeamEventProducer {
             if (!targetUserId.equals(actorId)) {
                 sendTeamEvent(team, eventType, targetUserId, actorId, actorName, message);
             }
+        }
+    }
+
+    public void publishUserTeamSyncEvent(UUID userId, UUID teamId, String teamName, String roleInTeam) {
+        if (userId == null) {
+            return;
+        }
+        UserTeamMembershipSyncEvent event = new UserTeamMembershipSyncEvent(
+                userId,
+                teamId,
+                teamName,
+                roleInTeam,
+                LocalDateTime.now()
+        );
+        Runnable publishAction = () -> {
+            log.info("Publishing UserTeamMembershipSyncEvent to topic {}: userId={}, teamId={}, role={}",
+                    UserTeamMembershipSyncEvent.TOPIC_NAME, userId, teamId, roleInTeam);
+            kafkaTemplate.send(
+                    UserTeamMembershipSyncEvent.TOPIC_NAME,
+                    userId.toString(),
+                    event
+            );
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publishAction.run();
+                }
+            });
+        } else {
+            publishAction.run();
         }
     }
 }

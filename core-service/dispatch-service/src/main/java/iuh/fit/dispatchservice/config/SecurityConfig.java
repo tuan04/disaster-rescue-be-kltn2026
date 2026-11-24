@@ -72,11 +72,18 @@ public class SecurityConfig {
                                 DispatcherType.ERROR
                         ).permitAll()
 
-                        // Khách chưa đăng nhập vẫn được gửi yêu cầu cứu hộ.
+                        // Khách chưa đăng nhập vẫn được gửi yêu cầu cứu hộ và kiểm tra trạng thái theo ID.
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/v1/sos-requests"
+                                "/api/v1/sos-requests",
+                                "/api/v1/sos-requests/statuses"
                         ).permitAll()
+
+                        // Người dùng đã đăng nhập lấy lịch sử yêu cầu cứu hộ của chính mình.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/sos-requests/my"
+                        ).authenticated()
 
                         // Danh sách khu vực hoạt động phục vụ phía người dùng.
                         .requestMatchers(

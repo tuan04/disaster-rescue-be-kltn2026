@@ -265,6 +265,9 @@ public class CampaignMemberService {
                 team.getLeaderName(),
                 String.format("Bạn đã được mời rời khỏi Đội cứu hộ \"%s\".", team.getTeamName())
         );
+        if (member.getMemberId() != null) {
+            teamEventProducer.publishUserTeamSyncEvent(member.getMemberId(), null, null, "RESCUER");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -335,6 +338,12 @@ public class CampaignMemberService {
                         rescuerId,
                         saved.getFullName(),
                         String.format("%s đã chấp nhận lời mời và gia nhập đội \"%s\".", saved.getFullName(), saved.getCampaignTeam().getTeamName())
+                );
+                teamEventProducer.publishUserTeamSyncEvent(
+                        rescuerId,
+                        saved.getCampaignTeam().getId(),
+                        saved.getCampaignTeam().getTeamName(),
+                        "RESCUER"
                 );
             }
 
@@ -522,6 +531,12 @@ public class CampaignMemberService {
                         leaderId,
                         saved.getCampaignTeam().getLeaderName(),
                         String.format("Yêu cầu gia nhập đội cứu hộ \"%s\" của bạn đã được phê duyệt!", saved.getCampaignTeam().getTeamName())
+                );
+                teamEventProducer.publishUserTeamSyncEvent(
+                        saved.getMemberId(),
+                        saved.getCampaignTeam().getId(),
+                        saved.getCampaignTeam().getTeamName(),
+                        "RESCUER"
                 );
             }
 

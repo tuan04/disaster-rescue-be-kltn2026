@@ -1,6 +1,5 @@
 package iuh.fit.dispatchservice.entity;
 
-
 import iuh.fit.dispatchservice.enums.EmergencyLevel;
 import iuh.fit.dispatchservice.enums.RequestSource;
 import iuh.fit.dispatchservice.enums.RequestStatus;
@@ -11,7 +10,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "rescue_requests")
+@Table(
+        name = "rescue_requests",
+        indexes = {
+                @Index(name = "idx_rescue_requests_reporter_id", columnList = "reporter_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,7 +54,6 @@ public class RescueRequest {
 
     @Column(name = "safe_at")
     private LocalDateTime safeAt;
-
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;

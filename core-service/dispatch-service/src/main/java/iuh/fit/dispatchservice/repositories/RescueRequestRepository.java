@@ -1,5 +1,6 @@
 package iuh.fit.dispatchservice.repositories;
 
+import iuh.fit.dispatchservice.dtos.projection.RescueRequestStatusProjection;
 import iuh.fit.dispatchservice.dtos.projection.RescueStatisticsProjection;
 import iuh.fit.dispatchservice.entity.RescueRequest;
 import iuh.fit.dispatchservice.enums.AssignmentStatus;
@@ -25,6 +26,12 @@ public interface RescueRequestRepository extends JpaRepository<RescueRequest, UU
     @NonNull
     @EntityGraph(attributePaths = {"mapPoint"})
     Page<RescueRequest> findAll(Specification<RescueRequest> spec, @NonNull Pageable pageable);
+
+    @Query("SELECT r.id AS id, r.status AS status FROM RescueRequest r WHERE r.id IN :ids")
+    List<RescueRequestStatusProjection> findStatusesByIdIn(@Param("ids") Collection<UUID> ids);
+
+    @EntityGraph(attributePaths = {"mapPoint"})
+    List<RescueRequest> findByReporterIdOrderByCreatedAtDescIdDesc(UUID reporterId);
 
     // 1. Chờ tiếp nhận: PENDING và không có phân công đang hoạt động.
     @Query("""

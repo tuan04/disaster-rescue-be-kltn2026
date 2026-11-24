@@ -41,8 +41,10 @@ import java.time.ZoneId;
 import iuh.fit.resourcemanagementservice.utils.TeamCode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -149,6 +151,12 @@ public class CampaignTeamService {
                 "Ban Quản Lý",
                 String.format("Đội cứu hộ \"%s\" của bạn đã được Ban quản lý phê duyệt hoạt động.", team.getTeamName())
         );
+        teamEventProducer.publishUserTeamSyncEvent(
+                team.getLeaderId(),
+                team.getId(),
+                team.getTeamName(),
+                "LEADER"
+        );
 
         return campaignTeamMapper.toResponse(team);
     }
@@ -213,6 +221,12 @@ public class CampaignTeamService {
                 updatedTeam.getLeaderName(),
                 String.format("Đội cứu hộ \"%s\" đã chính thức giải tán.", updatedTeam.getTeamName())
         );
+
+        Set<UUID> allAffectedUsers = new LinkedHashSet<>(memberUserIds);
+        allAffectedUsers.add(leaderId);
+        for (UUID uid : allAffectedUsers) {
+            teamEventProducer.publishUserTeamSyncEvent(uid, null, null, "RESCUER");
+        }
 
         return campaignTeamMapper.toResponse(updatedTeam);
     }
@@ -330,6 +344,18 @@ public class CampaignTeamService {
                 currentLeaderId,
                 oldLeaderName,
                 String.format("Bạn đã được bổ nhiệm làm Đội trưởng mới của đội cứu hộ \"%s\".", savedTeam.getTeamName())
+        );
+        teamEventProducer.publishUserTeamSyncEvent(
+                currentLeaderId,
+                savedTeam.getId(),
+                savedTeam.getTeamName(),
+                "RESCUER"
+        );
+        teamEventProducer.publishUserTeamSyncEvent(
+                newLeaderId,
+                savedTeam.getId(),
+                savedTeam.getTeamName(),
+                "LEADER"
         );
 
         return campaignTeamMapper.toResponse(savedTeam);

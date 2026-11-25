@@ -20,5 +20,8 @@ public class UpdateCampaignRequest {
 
     private LocalDate endDate;
 
+    // Explicitly clear the end date while preserving PATCH omission semantics.
+    private Boolean clearEndDate;
+
     private CampaignStatus status;
 }

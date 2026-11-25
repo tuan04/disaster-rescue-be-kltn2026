@@ -6,11 +6,16 @@ import iuh.fit.resourcemanagementservice.dtos.request.CreateCampaignRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateCampaignRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.CampaignResponse;
 import iuh.fit.resourcemanagementservice.entity.Campaign;
+import iuh.fit.resourcemanagementservice.utils.CampaignCode;
 import iuh.fit.resourcemanagementservice.enums.CampaignStatus;
 import iuh.fit.resourcemanagementservice.repositories.CampaignRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import iuh.fit.common.response.PageResponse;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,6 +34,7 @@ public class CampaignService {
     @Transactional
     public CampaignResponse createCampaign(CreateCampaignRequest request) {
         Campaign campaign = Campaign.builder()
+                .code(CampaignCode.generate(request.getName(), campaignRepository.nextCodeSequence()))
                 .name(request.getName().trim())
                 .startDate(request.getStartDate())
                 .endDate(null)
@@ -38,6 +44,19 @@ public class CampaignService {
         Campaign savedCampaign = campaignRepository.save(campaign);
 
         return CampaignResponse.fromEntity(savedCampaign);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CampaignResponse> getCampaigns(String keyword, int page, int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Trang phải từ 0 và kích thước trang từ 1 đến 100");
+        }
+        var pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+        var result = keyword == null || keyword.isBlank()
+                ? campaignRepository.findAll(pageable)
+                : campaignRepository.searchByNameOrCode(keyword.strip(), pageable);
+        return PageResponse.from(result.map(CampaignResponse::fromEntity));
     }
 
     public Campaign findById(UUID id) {
@@ -56,8 +75,16 @@ public class CampaignService {
 
         Campaign existingCampaign = findById(id);
 
+        if (request.getName() != null && request.getName().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Tên chiến dịch không được để trống");
+        }
+        boolean clearEndDate = Boolean.TRUE.equals(request.getClearEndDate());
+        if (clearEndDate && request.getEndDate() != null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Không thể vừa xóa vừa đặt ngày kết thúc");
+        }
         LocalDate effectiveStartDate = request.getStartDate() != null ? request.getStartDate() : existingCampaign.getStartDate();
-        LocalDate effectiveEndDate = request.getEndDate() != null ? request.getEndDate() : existingCampaign.getEndDate();
+        LocalDate effectiveEndDate = clearEndDate ? null
+                : request.getEndDate() != null ? request.getEndDate() : existingCampaign.getEndDate();
 
         if (effectiveEndDate != null && effectiveStartDate != null && effectiveEndDate.isBefore(effectiveStartDate)) {
             throw new BusinessException(
@@ -72,8 +99,8 @@ public class CampaignService {
         if (request.getStartDate() != null) {
             existingCampaign.setStartDate(request.getStartDate());
         }
-        if (request.getEndDate() != null) {
-            existingCampaign.setEndDate(request.getEndDate());
+        if (clearEndDate || request.getEndDate() != null) {
+            existingCampaign.setEndDate(effectiveEndDate);
         }
         if (request.getStatus() != null) {
             existingCampaign.setStatus(request.getStatus());

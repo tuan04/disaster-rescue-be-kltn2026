@@ -1,6 +1,7 @@
 package iuh.fit.resourcemanagementservice.controllers;
 
 import iuh.fit.common.response.ApiResponse;
+import iuh.fit.common.response.PageResponse;
 import iuh.fit.resourcemanagementservice.dtos.request.CreateCampaignRequest;
 import iuh.fit.resourcemanagementservice.dtos.request.UpdateCampaignRequest;
 import iuh.fit.resourcemanagementservice.dtos.response.CampaignResponse;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +21,16 @@ import java.util.UUID;
 public class CampaignController {
 
     private final CampaignService campaignService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<CampaignResponse>>> getCampaigns(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                campaignService.getCampaigns(keyword, page, size), "Lấy danh sách chiến dịch thành công"));
+    }
 
     /**
      * API Tạo mới Chiến dịch (Create Campaign)
@@ -48,7 +60,7 @@ public class CampaignController {
      * API Lấy danh sách Chiến dịch đang hoạt động (ACTIVE)
      */
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<java.util.List<CampaignResponse>>> getActiveCampaigns() {
+    public ResponseEntity<ApiResponse<List<CampaignResponse>>> getActiveCampaigns() {
         java.util.List<CampaignResponse> response = campaignService.getActiveCampaigns();
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy danh sách chiến dịch đang hoạt động thành công"));
     }

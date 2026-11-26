@@ -21,6 +21,9 @@ public class Campaign {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "code", nullable = false, unique = true, length = 48, updatable = false)
+    private String code;
+
     @Column(name = "name", nullable = false)
     private String name;
 

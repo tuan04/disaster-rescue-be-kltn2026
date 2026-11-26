@@ -4,6 +4,9 @@ import iuh.fit.common.exception.BusinessException;
 import iuh.fit.common.exception.ErrorCode;
 import iuh.fit.common.grpc.TeamInfoResponse;
 import iuh.fit.common.kafka.dto.RescueAcceptedEvent;
+import iuh.fit.common.kafka.dto.RescueRejectedEvent;
+import iuh.fit.common.kafka.dto.RescueAssignedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import iuh.fit.common.kafka.dto.RescueCompletedEvent;
 import iuh.fit.common.response.PageResponse;
 import iuh.fit.dispatchservice.client.ResourceTeamGrpcClient;
@@ -58,6 +61,7 @@ public class AssignmentService {
     private final ResourceTeamGrpcClient resourceTeamGrpcClient;
     private final RescueEventProducer rescueEventProducer;
     private final MapPointMapper mapPointMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private Assignment findById(UUID assignmentId) {
         return assignmentRepository.findById(assignmentId)
@@ -107,7 +111,13 @@ public class AssignmentService {
                         .build())
                 .toList();
 
-        return assignmentRepository.saveAll(assignmentsToSave);
+        List<Assignment> savedAssignments = assignmentRepository.saveAll(assignmentsToSave);
+        for (Assignment assignment : savedAssignments) {
+            applicationEventPublisher.publishEvent(new RescueAssignedEvent(
+                    assignment.getId(), requestId, assignment.getCampaignTeamId(),
+                    assignment.getAssignedTeamName(), Instant.now()));
+        }
+        return savedAssignments;
     }
 
     @Transactional
@@ -167,7 +177,7 @@ public class AssignmentService {
                 assignment.getAssignedTeamName(),
                 assignment.getLeaderPhone(),
                 Instant.now());
-        rescueEventProducer.publishRescueAcceptedEvent(event);
+        applicationEventPublisher.publishEvent(event);
         teamLocationTrackService.startTracking(assignment.getCampaignTeamId(), assignment.getId());
     }
 
@@ -200,6 +210,9 @@ public class AssignmentService {
         }
 
         assignmentRepository.save(assignment);
+        applicationEventPublisher.publishEvent(new RescueRejectedEvent(
+                assignment.getId(), requestId, assignment.getCampaignTeamId(),
+                assignment.getAssignedTeamName(), reason == null ? null : reason.trim(), Instant.now()));
     }
 
     public List<MapPointDetailResponse> getPendingAssignmentsByTeamId(UUID teamId) {

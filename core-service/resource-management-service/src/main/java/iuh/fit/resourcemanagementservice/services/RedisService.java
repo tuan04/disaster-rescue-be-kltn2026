@@ -68,10 +68,10 @@ public class RedisService {
         Point point = new Point(longitude, latitude);
         String teamIdStr = campaignTeamId.toString();
 
-        stringRedisTemplate.opsForGeo().add(TEAM_LOCATION_KEY_GIS + "all", point, teamIdStr);
+        String key = TEAM_LOCATION_KEY_GIS + "all";
 
-        String key = TEAM_LOCATION_KEY_GIS + campaignTeamId;
         stringRedisTemplate.opsForGeo().add(key, point, teamIdStr);
+        stringRedisTemplate.expire(key, TEAM_LOCATION_TTL);
     }
 
     public TeamLocation getCurrentLocation(UUID campaignTeamId) {
@@ -158,9 +158,5 @@ public class RedisService {
                 Collections.singletonList(key),
                 token
         );
-    }
-
-    public void releaseLock(String key) {
-        stringRedisTemplate.delete(key);
     }
 }

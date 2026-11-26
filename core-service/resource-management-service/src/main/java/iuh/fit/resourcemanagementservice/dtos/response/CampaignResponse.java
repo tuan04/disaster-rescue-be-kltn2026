@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public record CampaignResponse(
         UUID id,
+        String code,
         String name,
         LocalDate startDate,
         LocalDate endDate,
@@ -18,6 +19,7 @@ public record CampaignResponse(
     public static CampaignResponse fromEntity(Campaign campaign) {
         return CampaignResponse.builder()
                 .id(campaign.getId())
+                .code(campaign.getCode())
                 .name(campaign.getName())
                 .startDate(campaign.getStartDate())
                 .endDate(campaign.getEndDate())

@@ -5,6 +5,9 @@ spring:
   grpc:
     client:
       channel:
+        resource-management-service:
+          target: static://${RESOURCE_GRPC_HOST:localhost}:${RESOURCE_GRPC_PORT:9092}
+          negotiation-type: plaintext
         user-service:
           target: static://${USER_GRPC_HOST:localhost}:${USER_GRPC_PORT:9091}
           negotiation-type: plaintext

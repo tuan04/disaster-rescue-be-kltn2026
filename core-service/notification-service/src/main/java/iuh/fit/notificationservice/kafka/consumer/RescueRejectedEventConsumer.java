@@ -5,6 +5,7 @@ import iuh.fit.notificationservice.dtos.NotificationSocketMessage;
 import iuh.fit.notificationservice.services.RescueAssignmentNotificationService;
 import iuh.fit.notificationservice.socket.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -13,12 +14,15 @@ import java.time.ZoneOffset;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class RescueRejectedEventConsumer {
     private final RescueAssignmentNotificationService notificationService;
     private final WebSocketNotificationService webSocketNotificationService;
 
     @KafkaListener(topics = RescueRejectedEvent.TOPIC_NAME)
     public void consume(RescueRejectedEvent event) {
+        log.info("Received rescue rejection: assignmentId={}, requestId={}, teamId={}",
+                event.assignmentId(), event.requestId(), event.teamId());
         notificationService.notifyTeamRejected(event);
         // Admin/điều phối chỉ nhận socket, không lưu thông báo cho những người nhận này.
         webSocketNotificationService.broadcast(RescueEventConsumer.OPERATIONS_TOPIC,

@@ -59,6 +59,8 @@ public class RedisService {
             TeamLocation location) {
         String key = TEAM_LOCATION_KEY + campaignTeamId;
 
+        System.out.println("Saving location for team " + campaignTeamId + ": " + location.latitude() + ", " + location.longitude());
+
         saveLocationGIS(location.latitude(), location.longitude(), campaignTeamId);
 
         redisTemplate.opsForValue().set(key, location, TEAM_LOCATION_TTL);

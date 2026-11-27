@@ -10,6 +10,7 @@ import iuh.fit.common.grpc.ResourceTeamGrpcServiceGrpc;
 import iuh.fit.common.grpc.TeamNotificationRecipients;
 import iuh.fit.notificationservice.dtos.TeamRecipientsSnapshot;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ResourceTeamGrpcClient {
     private final ResourceTeamGrpcServiceGrpc.ResourceTeamGrpcServiceBlockingStub resourceTeamGrpcStub;
 
@@ -69,6 +71,8 @@ public class ResourceTeamGrpcClient {
                     .getNotificationRecipientsByTeamIds(request);
 
         } catch (StatusRuntimeException exception) {
+            log.error("Cannot resolve notification recipients: teamIds={}, grpcStatus={}",
+                    requestedTeamIds, exception.getStatus().getCode());
             throw new BusinessException(
                     ErrorCode.BAD_GATEWAY,
                     "Không lấy được người nhận từ resource-service"

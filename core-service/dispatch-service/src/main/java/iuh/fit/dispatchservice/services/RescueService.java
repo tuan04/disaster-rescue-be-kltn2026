@@ -180,9 +180,16 @@ public class RescueService {
         RescueRequest existingRequest = rescueRequestRepository.findById(updateSOSRequest.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Không tìm thấy yêu cầu cứu hộ"));
 
-        existingRequest.setReporterPhone(updateSOSRequest.getReporterPhone());
-        existingRequest.setContent(updateSOSRequest.getContent());
-        existingRequest.setStatus(updateSOSRequest.getStatus());
+        // Mobile chỉ gửi các trường được sửa; không xóa dữ liệu/trạng thái còn lại.
+        if (updateSOSRequest.getReporterPhone() != null) {
+            existingRequest.setReporterPhone(updateSOSRequest.getReporterPhone());
+        }
+        if (updateSOSRequest.getContent() != null) {
+            existingRequest.setContent(updateSOSRequest.getContent());
+        }
+        if (updateSOSRequest.getStatus() != null) {
+            existingRequest.setStatus(updateSOSRequest.getStatus());
+        }
 
         RescueRequest updatedRescueRequest = rescueRequestRepository.save(existingRequest);
 

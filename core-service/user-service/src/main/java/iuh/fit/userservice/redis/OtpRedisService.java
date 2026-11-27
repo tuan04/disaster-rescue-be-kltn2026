@@ -19,6 +19,8 @@ public class OtpRedisService {
         String otp = String.format("%06d", otpValue);
         System.out.println("otp: " + otp);
         stringRedisTemplate.opsForValue().set(key, otp, 5, TimeUnit.MINUTES);
+
+
         return otp;
     }
 

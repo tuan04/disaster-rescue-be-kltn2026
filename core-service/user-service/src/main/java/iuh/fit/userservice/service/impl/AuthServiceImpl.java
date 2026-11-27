@@ -26,6 +26,8 @@ public class AuthServiceImpl implements AuthService {
     private final OtpRedisService otpRedisService;
     private final LoginAttemptRedisService loginAttemptRedisService;
     private final OtpRateLimitService otpRateLimitService;
+    private final SmsService smsService;
+
 
     @Override
     @Transactional
@@ -46,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
 
         otpRateLimitService.acquireForgotPasswordPermit(user.getPhone());
 
-        otpRedisService.generateAndSaveOtp("opt:" + saveUser.getId());
+        generateAndSendOtp(saveUser.getId(), saveUser.getPhone());
 
         return saveUser;
     }
@@ -105,7 +107,8 @@ public class AuthServiceImpl implements AuthService {
 
         otpRateLimitService.acquireForgotPasswordPermit(user.getPhone());
 
-        otpRedisService.generateAndSaveOtp("opt:" + user.getId());
+        generateAndSendOtp(user.getId(), user.getPhone());
+
         return UserInfoResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
@@ -135,5 +138,13 @@ public class AuthServiceImpl implements AuthService {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Password and confirm password do not match");
         }
+    }
+
+
+
+    private void generateAndSendOtp(UUID userId, String phone) {
+        String key = "opt:" + userId;
+        String otp = otpRedisService.generateAndSaveOtp(key);
+        smsService.sendOtp(phone, otp);
     }
 }
